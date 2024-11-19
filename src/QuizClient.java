@@ -4,7 +4,7 @@ import java.util.Scanner;
 
 public class QuizClient {
     private static final String SERVER_ADDRESS = "127.0.0.1";
-    private static final int SERVER_PORT = 12345;
+    private static final int SERVER_PORT = 55555;
 
     public static void main(String[] args) {
         System.out.println("Försöker ansluta till servern på " + SERVER_ADDRESS + ":" + SERVER_PORT + "...");
