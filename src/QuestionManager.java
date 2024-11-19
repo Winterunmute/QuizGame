@@ -2,17 +2,28 @@ import java.io.*;
 import java.util.*;
 
 public class QuestionManager {
+
     private List<Question> questions;
+    private Properties properties;
 
     public QuestionManager(String propertiesFilePath) throws IOException {
         questions = new ArrayList<>();
-        Properties properties = new Properties();
+        properties = new Properties();
 
         // Läs frågorna från properties-filen
         try (FileInputStream fis = new FileInputStream(propertiesFilePath)) {
             properties.load(fis);
         }
 
+        getQuestion();
+
+    }
+
+    public List<Question> getQuestions() {
+        return questions;
+    }
+
+    private void getQuestion() {
         // Skapa frågorna
         int index = 1;
         while (properties.containsKey("question" + index)) {
@@ -23,13 +34,7 @@ public class QuestionManager {
             questions.add(new Question(questionText, options, correctAnswer));
             index++;
         }
-    }
 
-    public List<Question> getQuestions() {
-        return questions;
-    }
-
-    public void getQuestion(String category) {
 
     }
 }
