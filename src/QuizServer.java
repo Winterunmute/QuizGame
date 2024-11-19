@@ -20,6 +20,9 @@ public class QuizServer {
 
         handleClient(clientSocket);
 
+        QuestionManger questionManger = new QuestionManger();
+        questionManger questionBank = questionManger.getQuestion;
+
     }
 
     // Metod som använder en Thread lambda expression för att hantera flera klienter samtidigt
