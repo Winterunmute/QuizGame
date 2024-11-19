@@ -15,7 +15,7 @@ public class QuestionManager {
             properties.load(fis);
         }
 
-        getQuestion();
+        getQuestion("Historia");
 
     }
 
@@ -23,18 +23,25 @@ public class QuestionManager {
         return questions;
     }
 
-    private void getQuestion() {
+    public List<Question> getQuestion(String categoryFilter) {
         // Skapa frågorna
         int index = 1;
         while (properties.containsKey("question" + index)) {
-            String questionText = properties.getProperty("question" + index);
-            String[] options = properties.getProperty("options" + index).split(",");
-            int correctAnswer = Integer.parseInt(properties.getProperty("answer" + index));
+            // Kontrollera frågans kategori
+            String category = properties.getProperty("category" + index);
 
-            questions.add(new Question(questionText, options, correctAnswer));
+            if (category != null && category.equalsIgnoreCase(categoryFilter)) {
+                // Skapa frågan om kategorin matchar
+                String questionText = properties.getProperty("question" + index);
+                String[] options = properties.getProperty("options" + index).split(",");
+                int correctAnswer = Integer.parseInt(properties.getProperty("answer" + index));
+
+                questions.add(new Question(questionText, options, correctAnswer));
+            }
+
             index++;
         }
 
-
+        return questions;
     }
 }

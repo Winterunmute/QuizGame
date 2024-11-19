@@ -4,13 +4,13 @@ import java.util.List;
 
 public class QuizServer {
     private InetAddress ip = InetAddress.getByName("127.0.0.1");
-    private int portNum = 55555;
+    private int portNum = 45555;
     private List<Question> questionBank;
 
     public QuizServer() throws IOException {
         // Ladda frågebanken
         QuestionManager questionManager = new QuestionManager("src/questions.properties");
-        questionBank = questionManager.getQuestions();
+        questionBank = questionManager.getQuestion("Historia");
 
         // Starta servern
         ServerSocket serverSocket = new ServerSocket(portNum);
