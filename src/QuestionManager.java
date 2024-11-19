@@ -15,8 +15,6 @@ public class QuestionManager {
             properties.load(fis);
         }
 
-        getQuestion("Historia");
-
     }
 
     public List<Question> getQuestions() {
