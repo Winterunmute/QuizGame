@@ -46,7 +46,7 @@ public class GameSession {
 
     }
 
-    private void chooseCategory() {
+    public void chooseCategory() {
 
     }
 
