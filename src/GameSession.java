@@ -3,8 +3,10 @@ import java.util.Scanner;
 
 public class GameSession {
 
-    Scanner scanner = new Scanner(System.in);
+    private Scanner scanner = new Scanner(System.in);
     private ArrayList<Player> players = new ArrayList<>();
+
+    private String chosenCategory;
     private int totalPlayers = 0;
 
     public GameSession () {
@@ -41,6 +43,10 @@ public class GameSession {
 
         Player player = new Player(playerName);
         this.players.add(player);
+
+    }
+
+    private void chooseCategory() {
 
     }
 
