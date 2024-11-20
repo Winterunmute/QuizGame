@@ -10,7 +10,7 @@ public class QuizServer {
     public QuizServer() throws IOException {
         // Ladda frågebanken
         QuestionManager questionManager = new QuestionManager("src/questions.properties");
-        questionBank = questionManager.getQuestion("Historia");
+        questionBank = questionManager.getQuestion("Geografi");
 
         // Starta servern
         ServerSocket serverSocket = new ServerSocket(portNum);

@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -5,17 +6,20 @@ public class GameSession {
 
     private Scanner scanner = new Scanner(System.in);
     private ArrayList<Player> players = new ArrayList<>();
+    private QuestionManager questionManager;
 
     private String chosenCategory;
     private int totalPlayers = 0;
 
     public GameSession () {
 
-        addPlayers();
-        // Loggar namnen för att testa om det funkade rätt
-        for (Player player : players) {
-            System.out.println(player.getPlayerName());
+        try {
+            questionManager = new QuestionManager("src/questions.properties");
+        } catch (IOException e) {
+            e.getMessage();
         }
+
+        addPlayers();
     }
 
     private void addPlayers() {
@@ -50,7 +54,13 @@ public class GameSession {
 
     }
 
+    private void sendQuestion() {
 
+    }
+
+    public void startGame() {
+
+    }
 
     public static void main(String[] args) {
         new GameSession();
