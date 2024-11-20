@@ -43,7 +43,6 @@ public class GameSession {
             addPlayer("3");
             addPlayer("4");
         }
-
     }
 
     private void addPlayer( String playerNum) {
@@ -60,7 +59,6 @@ public class GameSession {
         System.out.println("1. Geografi");
         System.out.println("2. Historia");
         System.out.println("3. Sport");
-
 
         scanner.nextLine();
 
@@ -84,7 +82,7 @@ public class GameSession {
                     break;
                 default:
                     System.out.println("Ogiltigt val, standardkategori blir Geografi.");
-                    chosenCategory = "Geografi";
+                  //  chosenCategory = "Geografi";
                     break;
             }
         }
@@ -117,7 +115,6 @@ public class GameSession {
                 System.out.println("Fel svar! Rätt svar är: " + options[question.getCorrectAnswer() - 1]);
             }
         }
-
         // Skicka slutresultat
         System.out.println("Spelet är slut! Du fick " + score + " poäng.");
     }
@@ -128,8 +125,6 @@ public class GameSession {
     public static void main(String[] args) {
         GameSession gameSession = new GameSession();
         gameSession.chooseCategory();
-
-
         gameSession.startGame();
     }
 }
