@@ -6,6 +6,7 @@ public class QuizServer {
     private InetAddress ip = InetAddress.getByName("127.0.0.1");
     private int portNum = 45555;
     private List<Question> questionBank;
+    QuestionManager questionManager = new QuestionManager("src/questions.properties");
 
     public QuizServer() throws IOException {
         // Ladda frågebanken
