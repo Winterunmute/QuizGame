@@ -1,4 +1,6 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -21,29 +23,38 @@ public class GameSession {
         } catch (IOException e) {
             e.getMessage();
         }
-
-        addPlayers();
-        chooseCategory();
-        startGame();
     }
 
-    private void addPlayers() {
+    private void addPlayers(PrintWriter out, BufferedReader in) throws IOException {
+        out.println("Hur många antal spelare? (2 eller 4) ");
 
-        System.out.println("Hur många antal spelare? ");
-        String input = scanner.next();
-
-        totalPlayers = Integer.parseInt(input);
-
-        if (totalPlayers == 2) {
-            addPlayer("1");
-            addPlayer("2");
-        } else if (totalPlayers == 4) {
-            addPlayer("1");
-            addPlayer("2");
-            addPlayer("3");
-            addPlayer("4");
+        boolean validInput = false;
+        while (!validInput) {
+            String input = in.readLine(); // Läser in input av klienten genom BufferedReader
+            try {
+                totalPlayers = Integer.parseInt(input);
+                if (totalPlayers == 2 || totalPlayers == 4) {
+                    validInput = true;
+                } else {
+                    out.println("Ogilt antal spelare.");
+                }
+            } catch (NumberFormatException e) {
+                out.println("Fel, försök igen.");
+            }
         }
 
+        // Samla in namn för varje spelare
+        for (int i = 1; i <= totalPlayers; i++) {
+            out.println("Ange namn för spelare " + i + ":");
+            String playerName = in.readLine(); // Läs spelarens namn
+            addPlayer(playerName); // Lägg till spelare
+        }
+
+        // Bekräfta alla spelare
+        out.println("Alla spelare har registrerats:");
+        for (Player player : players) {
+            out.println("- " + player.getPlayerName());
+        }
     }
 
     private void addPlayer( String playerNum) {
@@ -121,15 +132,14 @@ public class GameSession {
         // Skicka slutresultat
         System.out.println("Spelet är slut! Du fick " + score + " poäng.");
     }
-    public void startGame() {
+    public void startGame(PrintWriter out, BufferedReader in) throws IOException {
+        addPlayers(out, in);
+        chooseCategory();
         sendQuestion();
     }
 
     public static void main(String[] args) {
         GameSession gameSession = new GameSession();
-        gameSession.chooseCategory();
 
-
-        gameSession.startGame();
     }
 }

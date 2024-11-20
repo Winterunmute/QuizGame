@@ -15,15 +15,13 @@ public class QuestionManager {
             properties.load(fis);
         }
 
-        getQuestions("Historia");
-
     }
 
     public List<Question> getQuestions() {
         return questions;
     }
 
-    public List<Question> getQuestions(String categoryFilter) {
+    public List<Question> getQuestion(String categoryFilter) {
         // Skapa frågorna
         int index = 1;
         while (properties.containsKey("question" + index)) {

@@ -5,14 +5,13 @@ import java.util.List;
 public class QuizServer {
     private InetAddress ip = InetAddress.getByName("127.0.0.1");
     private int portNum = 45555;
+    GameSession gameSession;
     private List<Question> questionBank;
     QuestionManager questionManager = new QuestionManager("src/questions.properties");
 
     public QuizServer() throws IOException {
-        // Ladda frågebanken
-        QuestionManager questionManager = new QuestionManager("src/questions.properties");
-        questionBank = questionManager.getQuestion("Historia");
-
+        // Sätt upp en ny GameSession
+        gameSession = new GameSession();
         // Starta servern
         ServerSocket serverSocket = new ServerSocket(portNum);
         System.out.println("Servern är igång på port " + portNum);
@@ -25,6 +24,8 @@ public class QuizServer {
             // Hantera klienten
             handleClient(clientSocket);
         }
+
+
     }
 
     // Metod för att hantera en klient
