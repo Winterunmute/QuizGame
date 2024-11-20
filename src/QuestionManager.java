@@ -1,45 +1,40 @@
 import java.io.*;
 import java.util.*;
-
+//2
 public class QuestionManager {
 
-    private List<Question> questions;
+    private List<Question> questions; // List to store questions for the current category
     private Properties properties;
 
     public QuestionManager(String propertiesFilePath) throws IOException {
         questions = new ArrayList<>();
         properties = new Properties();
 
-        // Läs frågorna från properties-filen
+        // Load questions from the specific properties file
         try (FileInputStream fis = new FileInputStream(propertiesFilePath)) {
             properties.load(fis);
         }
 
+        loadQuestions(); // Populate the `questions` list
     }
 
-    public List<Question> getQuestions() {
-        return questions;
-    }
+    private void loadQuestions() {
+        questions.clear(); // Clear any existing questions to avoid mixing categories
 
-    public List<Question> getQuestion(String categoryFilter) {
-        // Skapa frågorna
         int index = 1;
         while (properties.containsKey("question" + index)) {
-            // Kontrollera frågans kategori
-            String category = properties.getProperty("category" + index);
+            String questionText = properties.getProperty("question" + index);
+            String[] options = properties.getProperty("options" + index).split(",");
+            int correctAnswer = Integer.parseInt(properties.getProperty("answer" + index));
 
-            if (category != null && category.equalsIgnoreCase(categoryFilter)) {
-                // Skapa frågan om kategorin matchar
-                String questionText = properties.getProperty("question" + index);
-                String[] options = properties.getProperty("options" + index).split(",");
-                int correctAnswer = Integer.parseInt(properties.getProperty("answer" + index));
-
-                questions.add(new Question(questionText, options, correctAnswer));
-            }
-
+            questions.add(new Question(questionText, options, correctAnswer));
             index++;
         }
 
+        System.out.println("Laddade " + questions.size() + " frågor.");
+    }
+
+    public List<Question> getQuestions() {
         return questions;
     }
 }

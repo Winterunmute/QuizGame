@@ -1,32 +1,25 @@
 import java.io.*;
 import java.net.*;
-import java.util.List;
+import java.util.*;
+//2
 
 public class QuizServer {
-    private InetAddress ip = InetAddress.getByName("127.0.0.1");
-    private int portNum = 45555;
-    private List<Question> questionBank;
+    private static final String CATEGORY_DIRECTORY = "src/"; // Directory where properties files are stored
+    private static final String DEFAULT_CATEGORY = "Historia"; // Default category
+    private List<Question> questions; // Questions for the current round
 
     public QuizServer() throws IOException {
-        // Ladda frågebanken
-        QuestionManager questionManager = new QuestionManager("src/questions.properties");
-        questionBank = questionManager.getQuestion("Geografi");
-
-        // Starta servern
-        ServerSocket serverSocket = new ServerSocket(portNum);
-        System.out.println("Servern är igång på port " + portNum);
+        ServerSocket serverSocket = new ServerSocket(45555);
+        System.out.println("Servern är igång på port 45555");
 
         while (true) {
             System.out.println("Väntar på en klient...");
             Socket clientSocket = serverSocket.accept();
             System.out.println("Klient ansluten från: " + clientSocket.getInetAddress());
-
-            // Hantera klienten
-            handleClient(clientSocket);
+            handleClient(clientSocket); // Handle client connection
         }
     }
 
-    // Metod för att hantera en klient
     private void handleClient(Socket clientSocket) {
         new Thread(() -> {
             try (
@@ -34,40 +27,84 @@ public class QuizServer {
                     BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
             ) {
                 out.println("Välkommen till QuizServer!");
-                int score = 0;
+                out.println("Välj kategori (Historia/Geografi/Math):");
 
-                // Skicka frågor och ta emot svar
-                for (Question question : questionBank) {
-                    out.println("QUESTION: " + question.getQuestion());
-                    String[] options = question.getOptions();
-                    for (int i = 0; i < options.length; i++) {
-                        out.println((i + 1) + ". " + options[i]);
+
+                boolean continueGame = true;
+                while (continueGame) {
+                    // Prompt client for category
+                    String category = in.readLine().trim();
+
+                    // Validate category and load questions
+                    if (!isValidCategory(category)) {
+                        out.println("INVALID_CATEGORY: Ogiltig kategori. Servern använder standardkategorin.");
+                        category = DEFAULT_CATEGORY; // Fallback to default category
                     }
 
-                    String clientResponse = in.readLine();
-                    if (clientResponse != null) {
-                        int answerIndex = Integer.parseInt(clientResponse);
-                        if (answerIndex == question.getCorrectAnswer()) {
-                            out.println("Rätt svar!");
-                            score++;
-                        } else {
-                            out.println("Fel svar! Rätt svar är: " + options[question.getCorrectAnswer() - 1]);
+                    loadQuestionsForCategory(category);
+
+                    if (questions.isEmpty()) {
+                        out.println("INTE_TILLRÄCKLIGA_FRÅGOR: Inga frågor hittades i denna kategori.");
+                        return; // Exit if no questions are loaded
+                    }
+
+                    // Run the quiz for the selected category
+                    int score = 0;
+                    for (Question question : questions) {
+                        out.println("QUESTION: " + question.getQuestion());
+
+                        // Send options to the client
+                        String[] options = question.getOptions();
+                        for (int i = 0; i < options.length; i++) {
+                            out.println((i + 1) + ". " + options[i]);
                         }
+
+                        // Get client's answer and evaluate
+                        String clientResponse = in.readLine();
+                        if (clientResponse != null) {
+                            int answerIndex = Integer.parseInt(clientResponse);
+                            if (answerIndex == question.getCorrectAnswer()) {
+                                out.println("Rätt svar!");
+                                score++;
+                            } else {
+                                out.println("Fel svar! Rätt svar var: " + options[question.getCorrectAnswer() - 1]);
+                            }
+                        }
+                    }
+
+                    // Send score and ask if the client wants another round
+                    out.println("Rundan är slut! Du fick " + score + " poäng.");
+                    out.println("Vill du spela igen? (ja/nej): ");
+                    String playAgain = in.readLine();
+                    if (playAgain == null || !playAgain.equalsIgnoreCase("ja")) {
+                        continueGame = false;
                     }
                 }
 
-                // Skicka slutresultat
-                out.println("Spelet är slut! Du fick " + score + " poäng.");
             } catch (IOException e) {
-                System.out.println("Klientfel: " + e.getMessage());
+                System.out.println("Fel vid hantering av klient: " + e.getMessage());
             } finally {
                 try {
-                    clientSocket.close();
+                    clientSocket.close(); // Ensure the socket is closed
                 } catch (IOException e) {
-                    System.out.println("Kunde inte stänga klientanslutning: " + e.getMessage());
+                    System.out.println("Kunde inte stänga klientanslutningen: " + e.getMessage());
                 }
             }
         }).start();
+    }
+
+    private boolean isValidCategory(String category) {
+        // Check if a properties file exists for the selected category
+        File categoryFile = new File(CATEGORY_DIRECTORY + category + ".properties");
+        return categoryFile.exists();
+    }
+
+    private void loadQuestionsForCategory(String category) throws IOException {
+        questions = new ArrayList<>(); // Clear questions from the previous round
+        String categoryFilePath = CATEGORY_DIRECTORY + category + ".properties";
+        QuestionManager questionManager = new QuestionManager(categoryFilePath);
+        questions = questionManager.getQuestions();
+        System.out.println("Laddade " + questions.size() + " frågor för kategorin: " + category);
     }
 
     public static void main(String[] args) {
