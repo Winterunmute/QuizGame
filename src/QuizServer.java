@@ -1,57 +1,80 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.io.*;
+import java.net.*;
+import java.util.List;
 
 public class QuizServer {
-
     private InetAddress ip = InetAddress.getByName("127.0.0.1");
-    private int portNum = 55555;
-
+    private int portNum = 45555;
+    private List<Question> questionBank;
 
     public QuizServer() throws IOException {
+        // Ladda frågebanken
+        QuestionManager questionManager = new QuestionManager("src/questions.properties");
+        questionBank = questionManager.getQuestion("Geografi");
 
+        // Starta servern
         ServerSocket serverSocket = new ServerSocket(portNum);
-        Socket clientSocket = serverSocket.accept();
+        System.out.println("Servern är igång på port " + portNum);
 
-        handleClient(clientSocket);
+        while (true) {
+            System.out.println("Väntar på en klient...");
+            Socket clientSocket = serverSocket.accept();
+            System.out.println("Klient ansluten från: " + clientSocket.getInetAddress());
 
+            // Hantera klienten
+            handleClient(clientSocket);
+        }
     }
 
-    // Metod som använder en Thread lambda expression för att hantera flera klienter samtidigt
+    // Metod för att hantera en klient
     private void handleClient(Socket clientSocket) {
         new Thread(() -> {
-            try {
-                PrintWriter serverOut = new PrintWriter(clientSocket.getOutputStream(), true);
-                BufferedReader serverIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            try (
+                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
+            ) {
+                out.println("Välkommen till QuizServer!");
+                int score = 0;
 
-                String clientInput;
-                while ((clientInput = serverIn.readLine()) != null) {
-                    System.out.println("Från klient: " + clientInput);
+                // Skicka frågor och ta emot svar
+                for (Question question : questionBank) {
+                    out.println("QUESTION: " + question.getQuestion());
+                    String[] options = question.getOptions();
+                    for (int i = 0; i < options.length; i++) {
+                        out.println((i + 1) + ". " + options[i]);
+                    }
 
-                    serverOut.println(clientInput);
+                    String clientResponse = in.readLine();
+                    if (clientResponse != null) {
+                        int answerIndex = Integer.parseInt(clientResponse);
+                        if (answerIndex == question.getCorrectAnswer()) {
+                            out.println("Rätt svar!");
+                            score++;
+                        } else {
+                            out.println("Fel svar! Rätt svar är: " + options[question.getCorrectAnswer() - 1]);
+                        }
+                    }
                 }
 
-                serverIn.close();
-                serverOut.close();
-                clientSocket.close();
-                System.out.println("Klienten kopplade ifrån.");
-
-
+                // Skicka slutresultat
+                out.println("Spelet är slut! Du fick " + score + " poäng.");
             } catch (IOException e) {
-                System.out.println("Klient fel: " + e.getMessage());
+                System.out.println("Klientfel: " + e.getMessage());
+            } finally {
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    System.out.println("Kunde inte stänga klientanslutning: " + e.getMessage());
+                }
             }
         }).start();
-
     }
 
-    public static void main(String[] args) throws IOException {
-
-       new QuizServer();
-
+    public static void main(String[] args) {
+        try {
+            new QuizServer();
+        } catch (IOException e) {
+            System.err.println("Kunde inte starta servern: " + e.getMessage());
+        }
     }
 }
