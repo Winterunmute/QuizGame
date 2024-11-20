@@ -15,7 +15,7 @@ public class QuestionManager {
             properties.load(fis);
         }
 
-        getQuestion("Historia");
+        getQuestions("Historia");
 
     }
 
@@ -23,7 +23,7 @@ public class QuestionManager {
         return questions;
     }
 
-    public List<Question> getQuestion(String categoryFilter) {
+    public List<Question> getQuestions(String categoryFilter) {
         // Skapa frågorna
         int index = 1;
         while (properties.containsKey("question" + index)) {
