@@ -10,7 +10,6 @@ public class Player extends JFrame {
     private JButton button;
     private JButton resetButton;
 
-
     public Player() {
         this.name = JOptionPane.showInputDialog("Enter your name");
         this.score = 0;
