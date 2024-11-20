@@ -1,31 +1,50 @@
-public class Player {
+import javax.swing.*;
 
-    private String playerName;
-    private int playerScore = 0;
+public class Player extends JFrame {
+
+    private String name;
+    private int score;
+
+    private JFrame frame;
+    private JLabel nameLabel, scoreLabel;
+    private JButton button;
+    private JButton resetButton;
+
+    public Player() {
+        this.name = JOptionPane.showInputDialog("Enter your name");
+        this.score = 0;
 
 
-    public Player(String playerName) {
-        this.playerName = playerName;
+        frame = new JFrame("Player");
+        nameLabel = new JLabel("Player" + name);
+        scoreLabel = new JLabel("Score: " + score);
+        button = new JButton("Counter");
+        resetButton = new JButton("Reset");
+
+        JPanel panel = new JPanel();
+        panel.add(nameLabel);
+        panel.add(scoreLabel);
+        panel.add(button);
+        panel.add(resetButton);
+
+        frame.add(panel);
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+        frame.setSize(500, 500);
+
+        button.addActionListener(e -> {
+            score++;
+            scoreLabel.setText("Score: " + score);
+        });
+        resetButton.addActionListener(e -> {
+            score = 0;
+            scoreLabel.setText("Score: " + score);
+
+        });
+        JOptionPane.showMessageDialog(frame, "Welcome " + name);
     }
-
-    // Vi kallar på dessa metoder i GameSession klassen som sedan skickar vidare till GUI'n för att visa på skärmen
-
-    // Kallar på denna getter för att visa namnet för spelaren i GUI'n
-    public String getPlayerName() {
-        return playerName;
-    }
-
-    public void setPlayerName(String playerName) {
-        this.playerName = playerName;
-    }
-
-    // Kallar på denna getter för att visa poängen för spelaren i GUI'n
-    public int getPlayerScore() {
-        return playerScore;
-    }
-
-    // Metod för att uppdatera poängen för spelarna
-    public void updateScore () {
-        this.playerScore += 1;
+    public static void main(String[] args) {
+        new Player();
     }
 }
