@@ -2,7 +2,6 @@ import java.io.*;
 import java.util.*;
 
 public class QuestionManager {
-
     private List<Question> questions;
     private Properties properties;
 
@@ -15,31 +14,34 @@ public class QuestionManager {
             properties.load(fis);
         }
 
+        parseQuestions();
+    }
+
+    // Returnera alla frågor för en viss kategori
+    public List<Question> getQuestionsByCategory(String category) {
+        List<Question> filteredQuestions = new ArrayList<>();
+        for (Question question : questions) {
+            if (question.getCategory().equals(category)) {
+                filteredQuestions.add(question);
+            }
+        }
+        return filteredQuestions;
+    }
+
+    private void parseQuestions() {
+        int index = 1;
+        while (properties.containsKey("question" + index)) {
+            String questionText = properties.getProperty("question" + index);
+            String[] options = properties.getProperty("options" + index).split(",");
+            int correctAnswer = Integer.parseInt(properties.getProperty("answer" + index).trim());
+            String category = properties.getProperty("category" + index).trim();
+
+            questions.add(new Question(questionText, options, correctAnswer, category));
+            index++;
+        }
     }
 
     public List<Question> getQuestions() {
-        return questions;
-    }
-
-    public List<Question> getQuestion(String categoryFilter) {
-        // Skapa frågorna
-        int index = 1;
-        while (properties.containsKey("question" + index)) {
-            // Kontrollera frågans kategori
-            String category = properties.getProperty("category" + index);
-
-            if (category != null && category.equalsIgnoreCase(categoryFilter)) {
-                // Skapa frågan om kategorin matchar
-                String questionText = properties.getProperty("question" + index);
-                String[] options = properties.getProperty("options" + index).split(",");
-                int correctAnswer = Integer.parseInt(properties.getProperty("answer" + index));
-
-                questions.add(new Question(questionText, options, correctAnswer));
-            }
-
-            index++;
-        }
-
         return questions;
     }
 }
