@@ -1,6 +1,4 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,6 +99,10 @@ public class GameSession {
 
                 try {
                     int answerIndex = Integer.parseInt(clientResponse);
+                    if (answerIndex < 0 || answerIndex > 4) {
+                        out.println("Svar utanför val 1-4!");
+                        continue;
+                    }
                     if (answerIndex == question.getCorrectAnswer()) {
                         out.println("Rätt svar!");
                         player.incrementScore(); // Uppdaterar spelarens poäng
@@ -118,6 +120,14 @@ public class GameSession {
         for (Player player : players) {
             out.println(player.getPlayerName() + " fick totalt " + player.getScore() + " poäng!");
         }
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Resultat.txt", true))) {
+            for (Player player : players) {
+                writer.write(player.getPlayerName() + ": " + player.getScore() + "poäng");
+                writer.newLine();
+            }
+            out.println("Resultat sparat till fil.");
+        }catch (IOException e) {
+            out.println("Kunde inte spara resultat: " + e.getMessage());
+        }
     }
-
 }
