@@ -1,10 +1,15 @@
+package quizgame;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 
+
 public class QuizClient {
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static final int SERVER_PORT = 45555;
+
+    private static QuizGUI quizGUI;
 
     public static void main(String[] args) {
         System.out.println("Försöker ansluta till servern på " + SERVER_ADDRESS + ":" + SERVER_PORT + "...");
@@ -15,6 +20,9 @@ public class QuizClient {
              Scanner scanner = new Scanner(System.in)) {
 
             System.out.println("Ansluten till servern!");
+
+            quizGUI = new QuizGUI();
+            quizGUI.setVisible(true);
 
             String serverMessage;
             while ((serverMessage = in.readLine()) != null) {

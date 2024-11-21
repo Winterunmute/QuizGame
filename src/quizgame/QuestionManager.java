@@ -1,3 +1,5 @@
+package quizgame;
+
 import java.io.*;
 import java.util.*;
 
