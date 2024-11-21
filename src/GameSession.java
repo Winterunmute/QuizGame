@@ -29,7 +29,7 @@ public class GameSession {
     // Metod för att lägga till spelare till spelet
     private void addPlayers(PrintWriter out, BufferedReader in) throws IOException {
         out.println("Ange namn för de som ska spela:");
-        for (int i = 1; i <= 2; i++) {
+        for (int i = 1; i <= 4; i++) {
             addPlayer(out, in, i);
         }
 

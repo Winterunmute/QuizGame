@@ -21,7 +21,7 @@ public class QuizClient {
                 System.out.println(serverMessage); // Visa serverns meddelanden
 
                 // Om servern ber om input, låt spelaren svara
-                if (serverMessage.contains("Ditt svar") || serverMessage.contains("ange ditt namn")) {
+                if (serverMessage.contains("Ditt svar") || serverMessage.contains("ange ditt namn") || serverMessage.contains("Välj en kategori:")) {
                     String userInput = scanner.nextLine();
                     out.println(userInput); // Skicka spelarens input till servern
                 }
