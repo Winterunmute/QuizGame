@@ -1,5 +1,5 @@
 import java.io.*;
-import java.net.*;
+import java.net.Socket;
 import java.util.Scanner;
 
 public class QuizClient {
@@ -18,23 +18,12 @@ public class QuizClient {
 
             String serverMessage;
             while ((serverMessage = in.readLine()) != null) {
-                if (serverMessage.startsWith("QUESTION:")) {
-                    System.out.println("\n" + serverMessage.substring(9)); // Visa frågan
+                System.out.println(serverMessage); // Visa serverns meddelanden
 
-                    // Visa alternativen
-                    for (int i = 0; i < 4; i++) {
-                        System.out.println(in.readLine());
-                    }
-
-                    // Låt spelaren svara
-                    System.out.print("Ditt svar (1-4): ");
-                    String answer = scanner.nextLine();
-                    out.println(answer); // Skicka svaret till servern
-
-                    // Visa feedback
-                    System.out.println(in.readLine());
-                } else {
-                    System.out.println(serverMessage);
+                // Om servern ber om input, låt spelaren svara
+                if (serverMessage.contains("Ditt svar") || serverMessage.contains("ange ditt namn")) {
+                    String userInput = scanner.nextLine();
+                    out.println(userInput); // Skicka spelarens input till servern
                 }
             }
         } catch (IOException e) {
