@@ -63,6 +63,7 @@ public class GameSession {
             case "1" -> chosenCategory = "Geografi";
             case "2" -> chosenCategory = "Historia";
             case "3" -> chosenCategory = "Sport";
+            case "4" -> chosenCategory = "Kemi";
             default -> {
                 chosenCategory = "Geografi"; // Standardkategori
                 out.println("Ogiltigt val. Standardkategori: Geografi.");
