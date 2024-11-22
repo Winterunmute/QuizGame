@@ -12,6 +12,7 @@ public class GameSession {
     private QuestionManager questionManager; // Hanterar frågor från en extern fil
     private List<Question> questionBank; // Lista över frågor från den valda kategorin
 
+    private int totalPlayers = 0;
     private String chosenCategory; // Håller koll på den valda kategorin
 
     // Konstruktor som initialiserar QuestionManager
@@ -45,10 +46,18 @@ public class GameSession {
     }
 
     // Metod för att lägga till en spelare och begära deras namn
-    private void addPlayer(PrintWriter out, BufferedReader in, int playerNum) throws IOException {
+    public void addPlayer(PrintWriter out, BufferedReader in, int playerNum) throws IOException {
         out.println("Spelare " + playerNum + ", ange ditt namn:");
         String playerName = in.readLine();
         players.add(new Player(playerName)); // Skapar och lägger till en ny spelare i listan
+    }
+
+    public void addPlayerTest(int playerIndex, String playerName) {
+        if (playerIndex > players.size()) {
+            players.add(new Player(playerName)); // Add a new player
+        } else {
+            players.set(playerIndex - 1, new Player(playerName)); // Update existing player
+        }
     }
 
     // Metod som låter spelarna välja kategori
@@ -73,6 +82,30 @@ public class GameSession {
         }
 
         out.println("Vald kategori: " + chosenCategory); // Bekräftar valet
+    }
+
+    public void setChosenCategory(String category) {
+        this.chosenCategory = category;
+    }
+
+    public void setTotalPlayers(int totalPlayers) {
+        this.totalPlayers = totalPlayers;
+    }
+
+    public String getChosenCategory() {
+        return chosenCategory;
+    }
+
+    public int getTotalPlayers() {
+        return totalPlayers;
+    }
+
+    public String getPlayerNames() {
+        StringBuilder names = new StringBuilder();
+        for (Player player : players) { // `players` is the list of Player objects
+            names.append(player.getPlayerName()).append("\n");
+        }
+        return names.toString();
     }
 
     // Metod som skickar frågor till spelarna och tar emot deras svar
