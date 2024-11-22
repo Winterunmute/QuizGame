@@ -1,15 +1,11 @@
 package quizgame;
-
 import java.io.*;
-import java.net.Socket;
+import java.net.*;
 import java.util.Scanner;
-
 
 public class QuizClient {
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static final int SERVER_PORT = 45555;
-
-    private static QuizGUI quizGUI;
 
     public static void main(String[] args) {
         System.out.println("Försöker ansluta till servern på " + SERVER_ADDRESS + ":" + SERVER_PORT + "...");
@@ -21,17 +17,25 @@ public class QuizClient {
 
             System.out.println("Ansluten till servern!");
 
-            quizGUI = new QuizGUI();
-            quizGUI.setVisible(true);
-
             String serverMessage;
             while ((serverMessage = in.readLine()) != null) {
-                System.out.println(serverMessage); // Visa serverns meddelanden
+                if (serverMessage.startsWith("QUESTION:")) {
+                    System.out.println("\n" + serverMessage.substring(9)); // Visa frågan
 
-                // Om servern ber om input, låt spelaren svara
-                if (serverMessage.contains("Ditt svar") || serverMessage.contains("ange ditt namn") || serverMessage.contains("Välj en kategori:")) {
-                    String userInput = scanner.nextLine();
-                    out.println(userInput); // Skicka spelarens input till servern
+                    // Visa alternativen
+                    for (int i = 0; i < 4; i++) {
+                        System.out.println(in.readLine());
+                    }
+
+                    // Låt spelaren svara
+                    System.out.print("Ditt svar (1-4): ");
+                    String answer = scanner.nextLine();
+                    out.println(answer); // Skicka svaret till servern
+
+                    // Visa feedback
+                    System.out.println(in.readLine());
+                } else {
+                    System.out.println(serverMessage);
                 }
             }
         } catch (IOException e) {
