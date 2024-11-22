@@ -19,24 +19,31 @@ public class QuizClient {
 
             String serverMessage;
             while ((serverMessage = in.readLine()) != null) {
-                if (serverMessage.startsWith("QUESTION:")) {
-                    System.out.println("\n" + serverMessage.substring(9)); // Visa frågan
+                System.out.println(serverMessage); // Visa serverns meddelande
 
+                // Kontrollera om servern väntar på inmatning
+                if (serverMessage.endsWith(":") || serverMessage.endsWith("?")) {
+                    // Servern ber om inmatning
+                    String userInput = scanner.nextLine();
+                    out.println(userInput); // Skicka inmatningen tillbaka till servern
+                } else if (serverMessage.startsWith("Fråga:")) {
+                    // Servern skickar en fråga
                     // Visa alternativen
                     for (int i = 0; i < 4; i++) {
-                        System.out.println(in.readLine());
+                        String option = in.readLine();
+                        System.out.println(option);
                     }
 
-                    // Låt spelaren svara
-                    System.out.print("Ditt svar (1-4): ");
+                    // Be användaren om svar
+                    System.out.print("Ditt svar: ");
                     String answer = scanner.nextLine();
                     out.println(answer); // Skicka svaret till servern
 
                     // Visa feedback
-                    System.out.println(in.readLine());
-                } else {
-                    System.out.println(serverMessage);
+                    String feedback = in.readLine();
+                    System.out.println(feedback);
                 }
+                // Fortsätt att läsa nästa meddelande från servern
             }
         } catch (IOException e) {
             System.err.println("Kunde inte ansluta till servern: " + e.getMessage());
