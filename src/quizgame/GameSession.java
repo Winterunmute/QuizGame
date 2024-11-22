@@ -11,7 +11,6 @@ public class GameSession {
     private ArrayList<Player> players = new ArrayList<>(); // Lista för att lagra spelarna i spelet
     private QuestionManager questionManager; // Hanterar frågor från en extern fil
     private List<Question> questionBank; // Lista över frågor från den valda kategorin
-
     private int totalPlayers = 0;
     private int totalRounds = 3;
     private String chosenCategory; // Håller koll på den valda kategorin
