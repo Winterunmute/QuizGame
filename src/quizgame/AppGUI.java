@@ -8,7 +8,11 @@ import java.awt.event.FocusListener;
 public class AppGUI extends JFrame {
 
     private GameSession gameSession;
-    private JPanel playerNamePanel; // Panel for player name text fields
+    private JPanel mainPanel; // Main panel with CardLayout
+    private JPanel setupPanel; // Initial setup panel
+    private JPanel questionPanel; // Question and answer panel
+    private JLabel questionLabel;
+    private JButton[] answerButtons;
 
     public AppGUI() {
         gameSession = new GameSession();
@@ -19,12 +23,16 @@ public class AppGUI extends JFrame {
         setTitle("Quiz Game");
         setResizable(false);
 
-        // Wrapper panel
-        JPanel wrapperPanel = new JPanel();
-        wrapperPanel.setLayout(new BoxLayout(wrapperPanel, BoxLayout.Y_AXIS));
-        wrapperPanel.setBackground(Color.decode("#33c1ff"));
+        // Main panel with CardLayout
+        mainPanel = new JPanel(new CardLayout());
+        add(mainPanel);
 
-        // Title: "How many players?"
+        // Setup panel
+        setupPanel = new JPanel();
+        setupPanel.setLayout(new BoxLayout(setupPanel, BoxLayout.Y_AXIS));
+        setupPanel.setBackground(Color.decode("#33c1ff"));
+
+        // Title: "Hur många spelare?"
         JLabel playerChoiceTitle = new JLabel("Hur många spelare?");
         playerChoiceTitle.setFont(new Font("Monospaced", Font.BOLD, 28));
         playerChoiceTitle.setForeground(Color.decode("#ffffff"));
@@ -45,7 +53,7 @@ public class AppGUI extends JFrame {
         playerChoicePanel.add(buttonFourPlayers);
 
         // Player name input panel
-        playerNamePanel = new JPanel();
+        JPanel playerNamePanel = new JPanel();
         playerNamePanel.setBackground(Color.decode("#33c1ff"));
         playerNamePanel.setLayout(new BoxLayout(playerNamePanel, BoxLayout.Y_AXIS));
         playerNamePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -71,18 +79,17 @@ public class AppGUI extends JFrame {
         categoryPanel.add(sportsButton);
         categoryPanel.add(chemistryButton);
 
-        // Round title
+        // Round selection title
         JLabel roundTitle = new JLabel("Rundor");
         roundTitle.setFont(new Font("Monospaced", Font.BOLD, 24));
         roundTitle.setForeground(Color.decode("#ffffff"));
         roundTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Round panel
-        JPanel roundPanel = new JPanel();
+        JPanel roundPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         roundPanel.setBackground(Color.decode("#33c1ff"));
-        roundPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
-        for (int i = 3; i <= 5; i++) {
+        for (int i = 1; i <= 5; i++) {
             JButton roundButton = new JButton(String.valueOf(i));
             roundButton.setPreferredSize(new Dimension(50, 50));
             roundPanel.add(roundButton);
@@ -94,15 +101,64 @@ public class AppGUI extends JFrame {
         startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         startButton.setPreferredSize(new Dimension(200, 50));
 
+        // Add components to setup panel
+        setupPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        setupPanel.add(playerChoiceTitle);
+        setupPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        setupPanel.add(playerChoicePanel);
+        setupPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        setupPanel.add(playerNamePanel);
+        setupPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        setupPanel.add(categoryTitle);
+        setupPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        setupPanel.add(categoryPanel);
+        setupPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        setupPanel.add(roundTitle);
+        setupPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        setupPanel.add(roundPanel);
+        setupPanel.add(Box.createRigidArea(new Dimension(20, 30)));
+        setupPanel.add(startButton);
+
+        // Question panel
+        questionPanel = new JPanel();
+        questionPanel.setLayout(new BorderLayout());
+        questionPanel.setBackground(Color.BLACK);
+
+        // Question label
+        questionLabel = new JLabel("Väntar på fråga...");
+        questionLabel.setFont(new Font("Monospaced", Font.PLAIN, 18));
+        questionLabel.setForeground(new Color(0, 255, 0)); // Neon green for text
+        questionLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        questionPanel.add(questionLabel, BorderLayout.CENTER);
+
+        // Answer buttons panel
+        JPanel answerPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        answerPanel.setBackground(Color.BLACK);
+        answerPanel.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
+
+        answerButtons = new JButton[4];
+        for (int i = 0; i < 4; i++) {
+            answerButtons[i] = new JButton("Val " + (i + 1));
+            answerButtons[i].setBackground(new Color(0, 128, 0)); // Darker green
+            answerButtons[i].setForeground(new Color(0, 255, 0)); // Neon green
+            answerPanel.add(answerButtons[i]);
+        }
+
+        questionPanel.add(answerPanel, BorderLayout.SOUTH);
+
+        // Add panels to main panel
+        mainPanel.add(setupPanel, "Setup");
+        mainPanel.add(questionPanel, "Question");
+
         // Button listeners
         buttonTwoPlayers.addActionListener(e -> {
-            displayPlayerNameFields(2);
             gameSession.setTotalPlayers(2);
+            updatePlayerNameFields(playerNamePanel, 2);
         });
 
         buttonFourPlayers.addActionListener(e -> {
-            displayPlayerNameFields(4);
             gameSession.setTotalPlayers(4);
+            updatePlayerNameFields(playerNamePanel, 4);
         });
 
         historyButton.addActionListener(e -> gameSession.setChosenCategory("Historia"));
@@ -110,73 +166,22 @@ public class AppGUI extends JFrame {
         sportsButton.addActionListener(e -> gameSession.setChosenCategory("Sport"));
         chemistryButton.addActionListener(e -> gameSession.setChosenCategory("Kemi"));
 
-        // Show test dialog when "Starta spel" is clicked
-        startButton.addActionListener(e -> showTestDialog());
-
-        // Add components to wrapper panel
-        wrapperPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        wrapperPanel.add(playerChoiceTitle);
-        wrapperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        wrapperPanel.add(playerChoicePanel);
-        wrapperPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        wrapperPanel.add(playerNamePanel); // Dynamically generated player name fields
-        wrapperPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        wrapperPanel.add(categoryTitle);
-        wrapperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        wrapperPanel.add(categoryPanel);
-        wrapperPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        wrapperPanel.add(roundTitle);
-        wrapperPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        wrapperPanel.add(roundPanel);
-        wrapperPanel.add(Box.createRigidArea(new Dimension(20, 30)));
-        wrapperPanel.add(startButton);
-
-        // Add wrapper panel to JFrame
-        add(wrapperPanel);
+        startButton.addActionListener(e -> {
+            CardLayout cl = (CardLayout) mainPanel.getLayout();
+            cl.show(mainPanel, "Question");
+        });
 
         setVisible(true);
     }
 
-    private void showTestDialog() {
-        StringBuilder message = new StringBuilder();
-        message.append("Antal spelare: ").append(gameSession.getTotalPlayers()).append("\n");
-        message.append("Vald kategori: ").append(gameSession.getChosenCategory()).append("\n");
-        message.append("Spelarnamn:\n");
-        message.append(gameSession.getPlayerNames()); // Directly append the string of player names
-
-        JOptionPane.showMessageDialog(this, message.toString(), "Testresultat", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    // Display text fields for player names dynamically
-    private void displayPlayerNameFields(int playerCount) {
-        playerNamePanel.removeAll(); // Clear previous fields
+    private void updatePlayerNameFields(JPanel playerNamePanel, int playerCount) {
+        playerNamePanel.removeAll();
 
         for (int i = 1; i <= playerCount; i++) {
             JLabel nameLabel = new JLabel("Spelare " + i + ":");
-            nameLabel.setForeground(Color.decode("#ffffff"));
-            nameLabel.setFont(new Font("Monospaced", Font.PLAIN, 16));
-            nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
+            nameLabel.setForeground(Color.WHITE);
             JTextField nameField = new JTextField(20);
             nameField.setMaximumSize(new Dimension(300, 30));
-            nameField.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            // Add focus listener to call addPlayer when focus is lost
-            int playerIndex = i; // Store index for closure
-            nameField.addFocusListener(new FocusListener() {
-                @Override
-                public void focusGained(FocusEvent e) {
-                    // Do nothing when focus is gained
-                }
-
-                @Override
-                public void focusLost(FocusEvent e) {
-                    String playerName = nameField.getText().trim();
-                    if (!playerName.isEmpty()) {
-                        gameSession.addPlayerTest(playerIndex, playerName);
-                    }
-                }
-            });
 
             playerNamePanel.add(nameLabel);
             playerNamePanel.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -184,7 +189,6 @@ public class AppGUI extends JFrame {
             playerNamePanel.add(Box.createRigidArea(new Dimension(0, 10)));
         }
 
-        // Update the panel to reflect the changes
         playerNamePanel.revalidate();
         playerNamePanel.repaint();
     }
