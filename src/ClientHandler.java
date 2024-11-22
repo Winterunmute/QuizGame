@@ -1,19 +1,13 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
-import java.util.List;
 
 public class ClientHandler implements Runnable {
 
     private final Socket clientSocket;
-    private final List<Question> questionBank;
 
-
-    public ClientHandler(Socket clientSocket, List<Question> questionBank) {
+    public ClientHandler(Socket clientSocket) {
         this.clientSocket = clientSocket;
-        this.questionBank = questionBank;
+
     }
 
     @Override
@@ -22,14 +16,71 @@ public class ClientHandler implements Runnable {
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
         ) {
-            // Välkomna spelaren
-            out.println("Välkommen till QuizServer!");
+            // Skapar en instans av GameSession och startar spelet
+            GameSession gameSession = new GameSession();
 
-            // Spela spelet
-            playGame(out, in);
+            // Ta emot spelinställningar från klienten
+            String numPlayersStr = in.readLine();
+            int totalPlayers = Integer.parseInt(numPlayersStr);
+            gameSession.setTotalPlayers(totalPlayers);
 
-        } catch (IOException e) {
+            for (int i = 0; i < totalPlayers; i++) {
+                String playerName = in.readLine();
+                gameSession.addPlayer(playerName);
+            }
+
+            String category = in.readLine();
+            gameSession.setChosenCategory(category);
+
+            String totalRoundsStr = in.readLine();
+            int totalRounds = Integer.parseInt(totalRoundsStr);
+            gameSession.setTotalRounds(totalRounds);
+
+            gameSession.initializeGame();
+            System.out.println("Spelet har initialiserats på serversidan");
+
+            // Spelets huvudloop
+            while (!gameSession.isGameOver()) {
+                Player currentPlayer = gameSession.getCurrentPlayer();
+                out.println("Spelare: " + currentPlayer.getPlayerName());
+
+                Question question = gameSession.getNextQuestion();
+                if (question == null) {
+                    System.out.println("Inga fler frågor tillgängliga");
+                    break;
+                }
+
+                // Skicka frågan och alternativen
+                out.println("Fråga:" + question.getQuestion());
+                String optionsString = String.join("|", question.getOptions());
+                out.println("Alternativ:" + optionsString);
+                System.out.println("Skickar fråga: " + question.getQuestion());
+                System.out.println("Skickar alternativ: " + optionsString);
+
+
+                // Vänta på spelarens svar
+                String clientResponse = in.readLine();
+                System.out.println("Mottog svar från klienten: " + clientResponse);
+
+                int answerIndex = Integer.parseInt(clientResponse);
+                boolean isCorrect = gameSession.checkAnswer(answerIndex);
+
+                if (isCorrect) {
+                    out.println("Rätt svar!");
+                } else {
+                    out.println("Fel svar! Rätt svar är: " + question.getOptions()[question.getCorrectAnswer() - 1]);
+                }
+
+                // Gå till nästa tur
+                gameSession.nextTurn();
+            }
+
+            // Skicka spelets slutmeddelande
+            out.println("GAME_OVER");
+
+        } catch (Exception e) {
             System.err.println("Fel vid hantering av klient: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             try {
                 clientSocket.close();
@@ -38,40 +89,4 @@ public class ClientHandler implements Runnable {
             }
         }
     }
-
-    private void playGame(PrintWriter out, BufferedReader in) throws IOException {
-        int score = 0;
-
-        // Skicka frågor och ta emot svar
-        for (Question question : questionBank) {
-            out.println("QUESTION: " + question.getQuestion());
-            String[] options = question.getOptions();
-
-            // Skicka alternativen till klienten
-            for (int i = 0; i < options.length; i++) {
-                out.println((i + 1) + ". " + options[i]);
-            }
-
-            // Ta emot spelarens svar
-            String clientResponse = in.readLine();
-            if (clientResponse != null) {
-                try {
-                    int answerIndex = Integer.parseInt(clientResponse);
-                    if (answerIndex == question.getCorrectAnswer()) {
-                        out.println("Rätt svar!");
-                        score++;
-                    } else {
-                        out.println("Fel svar! Rätt svar är: " + options[question.getCorrectAnswer() - 1]);
-                    }
-                } catch (NumberFormatException e) {
-                    out.println("Ogiltigt svar. Du får ingen poäng.");
-                }
-            }
-        }
-
-        // Skicka slutresultat
-        out.println("Spelet är slut! Du fick " + score + " poäng.");
-    }
-
-
 }

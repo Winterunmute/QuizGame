@@ -1,47 +1,52 @@
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class QuestionManager {
-    private List<Question> questions;
-    private Properties properties;
 
-    public QuestionManager(String propertiesFilePath) throws IOException {
-        questions = new ArrayList<>();
-        properties = new Properties();
+    private List<Question> allQuestions;
 
-        // Läs frågorna från properties-filen
-        try (FileInputStream fis = new FileInputStream(propertiesFilePath)) {
-            properties.load(fis);
-        }
+    public QuestionManager(String propertiesFileName) throws IOException {
+        allQuestions = new ArrayList<>();
+        Properties properties = new Properties();
 
-        parseQuestions();
-    }
-
-    // Returnera alla frågor för en viss kategori
-    public List<Question> getQuestionsByCategory(String category) {
-        List<Question> filteredQuestions = new ArrayList<>();
-        for (Question question : questions) {
-            if (question.getCategory().equals(category)) {
-                filteredQuestions.add(question);
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("questions.properties")) {
+            if (input == null) {
+                throw new FileNotFoundException("Kunde inte hitta filen: " + propertiesFileName);
             }
+            properties.load(new InputStreamReader(input, StandardCharsets.UTF_8));
         }
-        return filteredQuestions;
-    }
 
-    private void parseQuestions() {
+
+        // Skapa alla frågor och lagra dem i allQuestions
         int index = 1;
         while (properties.containsKey("question" + index)) {
             String questionText = properties.getProperty("question" + index);
             String[] options = properties.getProperty("options" + index).split(",");
-            int correctAnswer = Integer.parseInt(properties.getProperty("answer" + index).trim());
-            String category = properties.getProperty("category" + index).trim();
+            int correctAnswer = Integer.parseInt(properties.getProperty("answer" + index));
+            String category = properties.getProperty("category" + index);
 
-            questions.add(new Question(questionText, options, correctAnswer, category));
+            Question question = new Question(questionText, options, correctAnswer, category);
+            allQuestions.add(question);
+
             index++;
         }
+
     }
 
-    public List<Question> getQuestions() {
-        return questions;
+    // Returnerar alla frågor
+    public List<Question> getAllQuestions() {
+        return new ArrayList<>(allQuestions); // Returnera en kopia för att undvika oavsiktliga ändringar
+    }
+
+    // Returnerar frågor för en specifik kategori
+    public List<Question> getQuestionsByCategory(String categoryFilter) {
+        List<Question> filteredQuestions = new ArrayList<>();
+        for (Question question : allQuestions) {
+            if (question.getCategory().equalsIgnoreCase(categoryFilter)) {
+                filteredQuestions.add(question);
+            }
+        }
+        return filteredQuestions;
     }
 }
