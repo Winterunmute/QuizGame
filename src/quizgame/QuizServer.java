@@ -1,13 +1,19 @@
 package quizgame;
-
-import java.io.*;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 
 public class QuizServer {
     private static final int PORT = 45555;
+    private List<Question> questionBank;
 
-    public QuizServer() {
+    public QuizServer() throws IOException {
+        // Ladda frågebanken
+        QuestionManager questionManager = new QuestionManager("src/questions.properties");
+        questionBank = questionManager.getQuestionsByCategory("Geografi");
+
+        // Starta servern
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Servern är igång på port " + PORT);
 
@@ -17,37 +23,19 @@ public class QuizServer {
                 System.out.println("Klient ansluten från: " + clientSocket.getInetAddress());
 
                 // Starta en ny tråd för att hantera klienten
-                // Lambda thread
-                new Thread(() -> handleClient(clientSocket)).start();
+                ClientHandler clientHandler = new ClientHandler(clientSocket, questionBank);
+                new Thread(clientHandler).start();
             }
         } catch (IOException e) {
             System.err.println("Kunde inte starta servern: " + e.getMessage());
         }
     }
 
-    // Metod för att hantera en klient
-    private void handleClient(Socket clientSocket) {
-        try (
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
-        ) {
-            // Skapa en ny instans av GameSession för klienten och starta spelet
-            GameSession gameSession = new GameSession();
-            gameSession.startGame(out, in);
-
+    public static void main(String[] args) {
+        try {
+            new QuizServer();
         } catch (IOException e) {
-            System.err.println("Fel vid hantering av klient: " + e.getMessage());
-        } finally {
-            try {
-                clientSocket.close();
-            } catch (IOException e) {
-                System.err.println("Kunde inte stänga klientanslutning: " + e.getMessage());
-            }
+            System.err.println("Kunde inte starta servern: " + e.getMessage());
         }
     }
-
-    public static void main(String[] args) {
-        new QuizServer();
-    }
 }
-
