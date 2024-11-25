@@ -17,7 +17,9 @@ public class AppGUI extends JFrame {
     private Color bgColor = Color.decode("#33c1ff");
     private Font titleFont = new Font("Monospaced", Font.BOLD, 24);
     private Font titleFontSmaller = new Font("Monospaced", Font.BOLD, 18);
+    private Font inputFieldFont = new Font("Monospaced", Font.PLAIN, 16);
     private Color textColor = Color.decode("#ffffff");
+
 
     public AppGUI() {
         gameSession = new GameSession();
@@ -59,17 +61,18 @@ public class AppGUI extends JFrame {
         inputFieldLabelP1.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JTextField inputFieldPlayer1 = new JTextField();
+        inputFieldPlayer1.setFont(inputFieldFont);
         inputFieldPlayer1.setMaximumSize(new Dimension(300, 30));
         inputFieldPlayer1.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Etikett och textfält för spelare 2
         JLabel inputFieldLabelP2 = new JLabel("Namn på spelare 2");
-        inputFieldLabelP2.setFont(titleFontSmaller);
+        inputFieldLabelP2.setFont(inputFieldFont);
         inputFieldLabelP2.setForeground(Color.WHITE);
         inputFieldLabelP2.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JTextField inputFieldPlayer2 = new JTextField();
-        inputFieldPlayer2.setFont(titleFontSmaller);
+        inputFieldPlayer2.setFont(inputFieldFont);
         inputFieldPlayer2.setMaximumSize(new Dimension(300, 30));
         inputFieldPlayer2.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -210,7 +213,7 @@ public class AppGUI extends JFrame {
 
         questionPanel.add(answerPanel, BorderLayout.SOUTH);
 
-        // Add panels to main panel
+
         mainPanel.add(setupPanel, "Setup");
         mainPanel.add(questionPanel, "Question");
 
@@ -248,8 +251,15 @@ public class AppGUI extends JFrame {
             cl.show(mainPanel, "Question");
         });
 
+        // Panelen som visar skärmen för slutresultat nedan - - - - - - - -
+
+        //TODO: Fortsätta att bygga på resultats-panelen
+        JPanel resultPanel = new JPanel();
+
         setVisible(true);
     }
+
+    // Metoder för GUI:n nedan - - - - - - - -
 
 
     protected void loadNextQuestion() {
