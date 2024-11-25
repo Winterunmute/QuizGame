@@ -304,9 +304,10 @@ public class AppGUI extends JFrame {
             // Om användaren klickar på knappen med rätt svar: sätt bakgrunden på den klickade knappen till grön
             answerButtons[answerIndex - 1].setBackground(Color.GREEN);
         } else {
+
             // Om användaren klickar en knapp med fel svar: sätt bakgrunden röd på den klickade knappen
-            // och bakgrunden grön på den rätta
             answerButtons[answerIndex - 1].setBackground(Color.RED);
+            // och bakgrunden grön på den rätta
             answerButtons[correctAnswerIndex].setBackground(Color.GREEN);
         }
 
