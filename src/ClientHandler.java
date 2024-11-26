@@ -1,85 +1,153 @@
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 
 public class ClientHandler implements Runnable {
+    private Socket clientSocket;
+    private PrintWriter out;
+    private BufferedReader in;
+    private GameLobby gameLobby;
+    private String playerName;
+    private boolean isHost = false;
 
-    private final Socket clientSocket;
 
-    public ClientHandler(Socket clientSocket) {
+    public void setHost(boolean isHost) {
+        this.isHost = isHost;
+    }
+
+    public ClientHandler(Socket clientSocket, GameLobby gameLobby ) {
         this.clientSocket = clientSocket;
+        this.gameLobby = gameLobby;
+    }
 
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    public void sendMessage(String message) {
+        out.println(message);
+    }
+
+    public void startGame() {
+        new Thread(() -> handleGame()).start();
     }
 
     @Override
     public void run() {
-        try (
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
-        ) {
-            // Skapar en instans av GameSession och startar spelet
-            GameSession gameSession = new GameSession();
+        try {
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-            // Ta emot spelinställningar från klienten
-            String numPlayersStr = in.readLine();
-            int totalPlayers = Integer.parseInt(numPlayersStr);
-            gameSession.setTotalPlayers(totalPlayers);
+            // Ta emot spelarens namn
+            out.println("ENTER_NAME");
+            playerName = in.readLine();
 
-            for (int i = 0; i < totalPlayers; i++) {
-                String playerName = in.readLine();
-                gameSession.addPlayer(playerName);
+            // Lägg till klienten i spelrummet
+            gameLobby.addClient(this);
+
+        } catch (IOException e) {
+            System.err.println("Fel vid hantering av klient: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleGame() {
+        try {
+            GameSession gameSession = gameLobby.getGameSession();
+
+            // Om klienten är värd, vänta på att få kategori och antal ronder från klienten
+            if (isHost) {
+                String category = in.readLine();
+                gameSession.setChosenCategory(category);
+
+                String roundsStr = in.readLine();
+                int rounds = Integer.parseInt(roundsStr);
+                gameSession.setTotalRounds(rounds);
+
+                gameSession.initializeGame();
+
+                // Skicka kategori och antal ronder till övriga klienter
+                for (ClientHandler client : gameLobby.getClients()) {
+                    if (client != this) {
+                        client.sendMessage("CATEGORY:" + category);
+                        client.sendMessage("ROUNDS:" + roundsStr);
+                    }
+                }
+            } else {
+                // Vänta på att få kategori och antal ronder från servern
+                String categoryMessage = in.readLine();
+                String roundsMessage = in.readLine();
+
+                String category = categoryMessage.substring(9);
+                String roundsStr = roundsMessage.substring(7);
+
+                gameSession.setChosenCategory(category);
+                int rounds = Integer.parseInt(roundsStr);
+                gameSession.setTotalRounds(rounds);
+
+                gameSession.initializeGame();
             }
 
-            String category = in.readLine();
-            gameSession.setChosenCategory(category);
-
-            String totalRoundsStr = in.readLine();
-            int totalRounds = Integer.parseInt(totalRoundsStr);
-            gameSession.setTotalRounds(totalRounds);
-
-            gameSession.initializeGame();
-            System.out.println("Spelet har initialiserats på serversidan");
-
-            // Spelets huvudloop
             while (!gameSession.isGameOver()) {
-                Player currentPlayer = gameSession.getCurrentPlayer();
-                out.println("Spelare: " + currentPlayer.getPlayerName());
+                synchronized (gameSession) {
+                    Player currentPlayer = gameSession.getCurrentPlayer();
 
-                Question question = gameSession.getNextQuestion();
-                if (question == null) {
-                    System.out.println("Inga fler frågor tillgängliga");
-                    break;
+                    // Skicka frågan och alternativen till alla klienter
+                    if (currentPlayer.getPlayerName().equals(playerName)) {
+                        out.println("YOUR_TURN");
+                    } else {
+                        out.println("WAIT");
+                    }
+
+                    Question question = gameSession.getCurrentRoundQuestion();
+                    if (question == null) {
+                        break;
+                    }
+
+                    out.println("Fråga:" + question.getQuestion());
+                    String optionsString = String.join("|", question.getOptions());
+                    out.println("Alternativ:" + optionsString);
+
+                    if (currentPlayer.getPlayerName().equals(playerName)) {
+                        // Vänta på spelarens svar
+                        String clientResponse = in.readLine();
+                        int answerIndex = Integer.parseInt(clientResponse);
+                        boolean isCorrect = gameSession.checkAnswer(answerIndex, playerName);
+
+                        if (isCorrect) {
+                            out.println("Rätt svar!");
+                        } else {
+                            String correctAnswer = question.getOptions()[question.getCorrectAnswer() - 1];
+                            out.println("Fel svar! Rätt svar är: " + correctAnswer);
+                        }
+
+                        // Gå vidare till nästa tur
+                        gameSession.nextTurn();
+                    }
                 }
-
-                // Skicka frågan och alternativen
-                out.println("Fråga:" + question.getQuestion());
-                String optionsString = String.join("|", question.getOptions());
-                out.println("Alternativ:" + optionsString);
-                System.out.println("Skickar fråga: " + question.getQuestion());
-                System.out.println("Skickar alternativ: " + optionsString);
-
-
-                // Vänta på spelarens svar
-                String clientResponse = in.readLine();
-                System.out.println("Mottog svar från klienten: " + clientResponse);
-
-                int answerIndex = Integer.parseInt(clientResponse);
-                boolean isCorrect = gameSession.checkAnswer(answerIndex);
-
-                if (isCorrect) {
-                    out.println("Rätt svar!");
-                } else {
-                    out.println("Fel svar! Rätt svar är: " + question.getOptions()[question.getCorrectAnswer() - 1]);
-                }
-
-                // Gå till nästa tur
-                gameSession.nextTurn();
+                // Vänta en kort stund innan nästa iteration
+                Thread.sleep(100);
             }
 
-            // Skicka spelets slutmeddelande
+            // Spelet är över
             out.println("GAME_OVER");
 
+            // Skicka slutresultatet
+            List<Player> finalResults = gameSession.getFinalResults();
+            StringBuilder resultsMessage = new StringBuilder("RESULTS:");
+            for (Player player : finalResults) {
+                resultsMessage.append(player.getPlayerName())
+                        .append(":")
+                        .append(player.getScore())
+                        .append("|");
+            }
+            out.println(resultsMessage.toString());
+
         } catch (Exception e) {
-            System.err.println("Fel vid hantering av klient: " + e.getMessage());
+            System.err.println("Fel under spelet: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try {
@@ -87,6 +155,9 @@ public class ClientHandler implements Runnable {
             } catch (IOException e) {
                 System.err.println("Kunde inte stänga klientanslutning: " + e.getMessage());
             }
+
         }
+
     }
+
 }
