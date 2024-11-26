@@ -13,26 +13,9 @@ public class ClientHandler implements Runnable {
     private String playerName;
     private boolean isHost = false;
 
-
-    public void setHost(boolean isHost) {
-        this.isHost = isHost;
-    }
-
     public ClientHandler(Socket clientSocket, GameLobby gameLobby ) {
         this.clientSocket = clientSocket;
         this.gameLobby = gameLobby;
-    }
-
-    public String getPlayerName() {
-        return playerName;
-    }
-
-    public void sendMessage(String message) {
-        out.println(message);
-    }
-
-    public void startGame() {
-        new Thread(() -> handleGame()).start();
     }
 
     @Override
@@ -48,9 +31,15 @@ public class ClientHandler implements Runnable {
             // Lägg till klienten i spelrummet
             gameLobby.addClient(this);
 
-        } catch (IOException e) {
-            System.err.println("Fel vid hantering av klient: " + e.getMessage());
-            e.printStackTrace();
+            synchronized (gameLobby) {
+                while (!gameLobby.isGameStarted()) {
+                    gameLobby.wait();
+                }
+            }
+
+        } catch (IOException | InterruptedException exception) {
+            System.err.println("Fel vid hantering av klient: " + exception.getMessage());
+            exception.printStackTrace();
         }
     }
 
@@ -158,6 +147,22 @@ public class ClientHandler implements Runnable {
 
         }
 
+    }
+
+    public void startGame() {
+        new Thread(() -> handleGame()).start();
+    }
+
+    public void sendMessage(String message) {
+        out.println(message);
+    }
+
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    public void setHost(boolean isHost) {
+        this.isHost = isHost;
     }
 
 }

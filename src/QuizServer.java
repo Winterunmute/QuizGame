@@ -34,7 +34,7 @@ public class QuizServer {
         for (GameLobby gameLobby : lobbies) {
             if (!gameLobby.isGameStarted() && !gameLobby.isFull()) {
                 assignedLobby = gameLobby;
-                return;
+                break;
             }
         }
 
@@ -45,6 +45,7 @@ public class QuizServer {
         }
 
         ClientHandler clientHandler = new ClientHandler(clientSocket, assignedLobby);
+        new Thread(clientHandler).start();
 
         assignedLobby.addClient(clientHandler);
     }

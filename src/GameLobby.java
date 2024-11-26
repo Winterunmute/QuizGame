@@ -56,6 +56,10 @@ public class GameLobby {
             clients.get(i).sendMessage("WAIT_FOR_GAME_TO_START");
         }
 
+        synchronized (this) {
+            notifyAll();
+        }
+
 
     }
 

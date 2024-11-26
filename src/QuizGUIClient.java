@@ -13,18 +13,7 @@ public class QuizGUIClient extends AppGUI {
     public QuizGUIClient() {
         super(); // Initierar GUI-komponenterna
 
-        // Anslut till servern
         connectToServer();
-
-        // Be användaren att ange sitt namn
-        playerName = JOptionPane.showInputDialog(this, "Ange ditt namn");
-        if (playerName == null || playerName.trim().isEmpty()) {
-            playerName = "Anonym";
-        }
-        out.println(playerName);
-
-        // Uppdatera spelaretiketten
-        setPlayerName(playerName);
 
         // Starta en tråd för att lyssna på serverns meddelanden
         new Thread(new ServerListener()).start();
@@ -73,6 +62,17 @@ public class QuizGUIClient extends AppGUI {
         SwingUtilities.invokeLater(() -> {
             String command = message.split(":")[0];
             switch (command) {
+                case "ENTER_NAME" -> {
+                    // Be användaren att ange sitt namn
+                    playerName = JOptionPane.showInputDialog(this, "Ange ditt namn");
+                    if (playerName == null || playerName.trim().isEmpty()) {
+                        playerName = "Anonym";
+                    }
+                    out.println(playerName);
+
+                    // Uppdatera spelaretiketten
+                    setPlayerName(playerName);
+                }
                 case "WAIT" -> handleWaitMessage();
                 case "YOUR_TURN" -> handleYourTurnMessage();
                 case "Fråga" -> handleQuestionMessage(message);
