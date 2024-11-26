@@ -15,7 +15,6 @@ public class GameSession {
     private int currentQuestionIndex;
     private int currentPlayerIndex;
     private int currentRound;
-    private Question currentRoundQuestion;
 
     public GameSession() {
         try {
@@ -65,26 +64,23 @@ public class GameSession {
         currentQuestionIndex = 0;
         currentPlayerIndex = 0;
         currentRound = 1;
-
-        // Hämta första frågan
-        currentRoundQuestion = questionBank.get(currentQuestionIndex++);
+        System.out.println("Spelet är initialiserat med kategori: " + chosenCategory + " och " + totalRounds + " ronder.");
     }
 
     public Question getCurrentRoundQuestion() {
-        return currentRoundQuestion;
-    }
-
-    // Hämta nästa fråga
-    public Question getNextQuestion() {
         if (currentQuestionIndex >= questionBank.size() || currentRound > totalRounds) {
             return null;
         }
-        return questionBank.get(currentQuestionIndex++);
+        return questionBank.get(currentQuestionIndex);
     }
 
     // Kontrollera spelarens svar
     public boolean checkAnswer(int playerAnswer, String playerName) {
-        boolean isCorrect = (playerAnswer == currentRoundQuestion.getCorrectAnswer());
+        Question currentQuestion = getCurrentRoundQuestion();
+        if (currentQuestion == null) {
+            return false;
+        }
+        boolean isCorrect = (playerAnswer == currentQuestion.getCorrectAnswer());
         // Uppdatera spelarens poäng
         for (Player player : players) {
             if (player.getPlayerName().equals(playerName)) {
@@ -102,52 +98,30 @@ public class GameSession {
         if (currentPlayerIndex >= players.size()) {
             currentPlayerIndex = 0;
             currentRound++;
-            if (currentQuestionIndex < questionBank.size()) {
-                currentRoundQuestion = questionBank.get(currentQuestionIndex++);
-            } else {
-                currentRoundQuestion = null;
+            if (currentRound > totalRounds) {
+                return;
             }
         }
+
+        currentQuestionIndex++;
     }
 
     // Kontrollera om spelet är slut
     public boolean isGameOver() {
-        return currentRound > totalRounds || currentRoundQuestion == null;
+        return currentRound > totalRounds || currentQuestionIndex >= questionBank.size();
     }
 
     // Hämta aktuell spelare
     public Player getCurrentPlayer() {
+        if (players.isEmpty()) {
+            return null;
+        }
         return players.get(currentPlayerIndex);
-    }
-
-    // Hämta aktuell runda
-    public int getCurrentRound() {
-        return currentRound;
     }
 
     // Hämta slutresultat
     public List<Player> getFinalResults() {
         players.sort((p1, p2) -> Integer.compare(p2.getScore(), p1.getScore()));
         return players;
-    }
-
-    // Getter-metoder
-    public int getTotalPlayers() {
-        return totalPlayers;
-    }
-
-    public String getChosenCategory() {
-        return chosenCategory;
-    }
-
-    public List<Player> getPlayers() {
-        return players;
-    }
-
-    public Question getCurrentQuestion() {
-        if (currentQuestionIndex == 0) {
-            return null;
-        }
-        return questionBank.get(currentQuestionIndex - 1);
     }
 }

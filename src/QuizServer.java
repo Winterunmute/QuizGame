@@ -6,7 +6,7 @@ import java.util.concurrent.Executors;
 
 public class QuizServer {
     private static final int PORT = 45555;
-    private static final int MAX_PLAYERS_PER_GAME = 2;
+    private static final int MAX_PLAYERS_PER_GAME = 2; // Se till att detta är 2
     private final GameLobby gameLobby;
 
     public QuizServer() {

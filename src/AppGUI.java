@@ -33,8 +33,15 @@ public class AppGUI extends JFrame {
         // Lägg till frågepanelen i mainPanel
         mainPanel.add(questionPanel, "Question");
 
+        // Lägg till en testknapp för felsökning
+        addTestButton();
+
         // Gör fönstret synligt
         setVisible(true);
+
+        // Ta fram fönstret
+        this.toFront();
+        this.repaint();
     }
 
     private void buildQuestionPanel() {
@@ -46,12 +53,12 @@ public class AppGUI extends JFrame {
         JPanel infoPanel = new JPanel(new GridLayout(1, 2));
         infoPanel.setBackground(bgColor);
 
-        playerLabel = new JLabel("Spelare:");
+        playerLabel = new JLabel("Spelare: ");
         playerLabel.setFont(titleFontSmaller);
         playerLabel.setForeground(textColor);
         playerLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        roundLabel = new JLabel("Runda:");
+        roundLabel = new JLabel("Runda: ");
         roundLabel.setFont(titleFontSmaller);
         roundLabel.setForeground(textColor);
         roundLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -98,6 +105,14 @@ public class AppGUI extends JFrame {
         questionPanel.add(answerPanel, BorderLayout.SOUTH);
     }
 
+    private void addTestButton() {
+        JButton testButton = new JButton("Test");
+        testButton.setFont(titleFontSmaller);
+        testButton.setBackground(Color.YELLOW);
+        testButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Testknappen fungerade!"));
+        questionPanel.add(testButton, BorderLayout.EAST);
+    }
+
     // Metod för att hantera när en svarsknapp trycks ned
     protected void handleAnswerSelected(int answerIndex) {
         // Denna metod kommer att överskrivas i QuizGUIClient
@@ -115,24 +130,24 @@ public class AppGUI extends JFrame {
 
     // Metod för att uppdatera frågetexten
     public void updateQuestion(String questionText) {
-        questionLabel.setText("<html>" + questionText + "</html>");
+        questionLabel.setText("<html><h2>" + questionText + "</h2></html>");
     }
 
     // Metod för att uppdatera svarsalternativen
     public void updateOptions(String[] options) {
-        for (int i = 0; i < options.length; i++) {
-            answerButtons[i].setText(options[i]);
-            // Inaktivera knapparna tills det är spelarens tur
-            answerButtons[i].setEnabled(false);
-            // Återställ knappfärgen
-            answerButtons[i].setBackground(Color.WHITE);
+        for (int i = 0; i < answerButtons.length; i++) {
+            if (i < options.length) {
+                answerButtons[i].setText(options[i].trim());
+                System.out.println("Knapparna uppdaterades med alternativ: " + options[i].trim());
+            } else {
+                answerButtons[i].setText("");
+                answerButtons[i].setEnabled(false);
+                answerButtons[i].setBackground(Color.WHITE);
+                System.out.println("Knapparna uppdaterades utan alternativ.");
+            }
         }
-        // Inaktivera oanvända knappar om det finns färre än 4 alternativ
-        for (int i = options.length; i < answerButtons.length; i++) {
-            answerButtons[i].setText("");
-            answerButtons[i].setEnabled(false);
-            answerButtons[i].setBackground(Color.WHITE);
-        }
+        // Inaktivera knapparna tills det är spelarens tur
+        enableAnswerButtons(false);
     }
 
     // Metod för att aktivera/inaktivera svarsknapparna
@@ -140,6 +155,7 @@ public class AppGUI extends JFrame {
         for (JButton button : answerButtons) {
             button.setEnabled(enable);
         }
+        System.out.println("Svarsknapparna är nu " + (enable ? "aktiverade." : "inaktiverade."));
     }
 
     // Metod för att visa feedback till spelaren
@@ -150,13 +166,19 @@ public class AppGUI extends JFrame {
     // Metod för att markera rätt svar
     public void highlightCorrectAnswer(int correctIndex) {
         // Indexering från 0
-        answerButtons[correctIndex].setBackground(Color.GREEN);
+        if (correctIndex >= 0 && correctIndex < answerButtons.length) {
+            answerButtons[correctIndex].setBackground(Color.GREEN);
+        }
     }
 
     // Metod för att markera fel och rätt svar
     public void highlightWrongAnswer(int selectedIndex, int correctIndex) {
-        answerButtons[selectedIndex].setBackground(Color.RED);
-        answerButtons[correctIndex].setBackground(Color.GREEN);
+        if (selectedIndex >= 0 && selectedIndex < answerButtons.length) {
+            answerButtons[selectedIndex].setBackground(Color.RED);
+        }
+        if (correctIndex >= 0 && correctIndex < answerButtons.length) {
+            answerButtons[correctIndex].setBackground(Color.GREEN);
+        }
     }
 
     // Metod för att återställa svarsknapparna
@@ -167,7 +189,14 @@ public class AppGUI extends JFrame {
         }
     }
 
+    // Metod för att visa en specifik panel i mainPanel
+    public void showPanel(String name) {
+        CardLayout cl = (CardLayout) mainPanel.getLayout();
+        cl.show(mainPanel, name);
+        System.out.println("Visar panel: " + name);
+    }
+
     public static void main(String[] args) {
-        new AppGUI();
+        new QuizGUIClient(); // Ändrat till QuizGUIClient för att köra klienten direkt
     }
 }

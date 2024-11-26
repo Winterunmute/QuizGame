@@ -22,6 +22,7 @@ public class Question {
     public int getCorrectAnswer() {
         return correctAnswer;
     }
+
     public String getCategory() {
         return category;
     }

@@ -10,13 +10,12 @@ public class QuestionManager {
         allQuestions = new ArrayList<>();
         Properties properties = new Properties();
 
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("questions.properties")) {
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(propertiesFileName)) {
             if (input == null) {
                 throw new FileNotFoundException("Kunde inte hitta filen: " + propertiesFileName);
             }
             properties.load(new InputStreamReader(input, StandardCharsets.UTF_8));
         }
-
 
         // Skapa alla frågor och lagra dem i allQuestions
         int index = 1;
@@ -31,7 +30,6 @@ public class QuestionManager {
 
             index++;
         }
-
     }
 
     // Returnerar alla frågor

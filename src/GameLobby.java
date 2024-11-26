@@ -21,8 +21,11 @@ public class GameLobby {
         }
 
         clients.add(clientHandler);
+        System.out.println("Klient tillagd: " + clientHandler.getPlayerName());
+
         if (clients.size() == maxPlayers) {
             gameStarted = true;
+            System.out.println("Max antal spelare uppnått. Startar spelet...");
             startGame();
         }
     }
@@ -36,21 +39,21 @@ public class GameLobby {
     }
 
     private void startGame() {
-        // Starta spelet när alla klienter har anslutit
-
         gameSession.setTotalPlayers(maxPlayers);
         for (ClientHandler client : clients) {
             String playerName = client.getPlayerName();
             gameSession.addPlayer(playerName);
+            System.out.println("Spelare tillagd i GameSession: " + playerName);
         }
 
         // Bestäm en värd (första klienten) som väljer kategori och antal ronder
         ClientHandler host = clients.get(0);
         host.setHost(true);
-        host.sendMessage("CHOOSE_CATEGORY");
-        host.sendMessage("CHOOSE_ROUNDS");
+        System.out.println(host.getPlayerName() + " är värd.");
 
-        // När värden har valt kategori och ronder, initierar vi spelet
-        // Detta kan hanteras via metoder som väntar på dessa värden
+        // Starta spelhanteringslogik för varje klient
+        for (ClientHandler client : clients) {
+            client.startGame();
+        }
     }
 }
