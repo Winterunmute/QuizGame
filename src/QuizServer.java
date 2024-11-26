@@ -29,20 +29,25 @@ public class QuizServer {
     }
 
     private synchronized void assignClientToLobby(Socket clientSocket) {
+        GameLobby assignedLobby = null;
         // Loop igenom lobbies och leta efter en lobby som inte har startat och har plats för fler
         for (GameLobby gameLobby : lobbies) {
             if (!gameLobby.isGameStarted() && !gameLobby.isFull()) {
-                gameLobby.addClient(clientSocket);
+                assignedLobby = gameLobby;
                 return;
             }
         }
 
         // Om ingen lobby finns, skapa en ny
-        GameLobby newLobby = new GameLobby(2);
-        lobbies.add(newLobby);
-        newLobby.addClient(clientSocket);
-    }
+        if (assignedLobby == null) {
+            assignedLobby = new GameLobby(MAX_PLAYERS_PER_GAME);
+            lobbies.add(assignedLobby);
+        }
 
+        ClientHandler clientHandler = new ClientHandler(clientSocket, assignedLobby);
+
+        assignedLobby.addClient(clientHandler);
+    }
     public static void main(String[] args) {
         new QuizServer();
     }

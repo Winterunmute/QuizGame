@@ -15,16 +15,13 @@ public class GameLobby {
         this.gameStarted = false;
     }
 
-    public synchronized void addClient(Socket clientSocket) {
+    public synchronized void addClient(ClientHandler clientHandler) {
         if (gameStarted) {
             System.out.println("Lobbyn är full, letar efter en annan.");
             return;
         }
 
-        ClientHandler clientHandler = new ClientHandler(clientSocket, this);
         clients.add(clientHandler);
-
-        new Thread(clientHandler).start();
 
         if (clients.size() == maxPlayers) {
             startGame();
