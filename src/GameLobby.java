@@ -1,30 +1,65 @@
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GameLobby {
-
+    private int maxPlayers;
     private List<ClientHandler> clients;
     private GameSession gameSession;
-    private int maxPlayers;
-    private boolean gameStarted = false;
+    private boolean gameStarted;
 
     public GameLobby(int maxPlayers) {
         this.maxPlayers = maxPlayers;
         this.clients = new ArrayList<>();
         this.gameSession = new GameSession();
+        this.gameStarted = false;
     }
 
-    public synchronized void addClient(ClientHandler clientHandler) {
+    public synchronized void addClient(Socket clientSocket) {
         if (gameStarted) {
-            clientHandler.sendMessage("Spelet har redan startat.");
+            System.out.println("Lobbyn är full, letar efter en annan.");
             return;
         }
 
+        ClientHandler clientHandler = new ClientHandler(clientSocket, this);
         clients.add(clientHandler);
+
+        new Thread(clientHandler).start();
+
         if (clients.size() == maxPlayers) {
-            gameStarted = true;
             startGame();
         }
+    }
+
+    public synchronized boolean isFull() {
+        return clients.size() >= maxPlayers;
+    }
+
+    public synchronized boolean isGameStarted() {
+        return gameStarted;
+    }
+
+
+    private void startGame() {
+        gameStarted = true;
+        // Starta spelet när alla klienter har anslutit
+
+        for (ClientHandler client : clients) {
+            gameSession.addPlayer(client.getPlayerName());
+        }
+
+
+        gameSession.initializeGame();
+
+        clients.get(0).setHost(true);
+        clients.get(0).sendMessage("CHOOSE_CATEGORY");
+        clients.get(0).sendMessage("CHOOSE_ROUNDS");
+
+        for (int i = 1; i < clients.size(); i++) {
+            clients.get(i).sendMessage("WAIT_FOR_GAME_TO_START");
+        }
+
+
     }
 
     public List<ClientHandler> getClients() {
@@ -33,24 +68,5 @@ public class GameLobby {
 
     public GameSession getGameSession() {
         return gameSession;
-    }
-
-    private void startGame() {
-        // Starta spelet när alla klienter har anslutit
-
-        gameSession.setTotalPlayers(maxPlayers);
-        for (ClientHandler client : clients) {
-            String playerName = client.getPlayerName();
-            gameSession.addPlayer(playerName);
-        }
-
-        // Bestäm en värd (första klienten) som väljer kategori och antal ronder
-        ClientHandler host = clients.get(0);
-        host.setHost(true);
-        host.sendMessage("CHOOSE_CATEGORY");
-        host.sendMessage("CHOOSE_ROUNDS");
-
-        // När värden har valt kategori och ronder, initierar vi spelet
-        // Detta kan hanteras via metoder som väntar på dessa värden
     }
 }
