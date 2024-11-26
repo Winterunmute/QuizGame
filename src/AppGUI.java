@@ -95,41 +95,47 @@ public class AppGUI extends JFrame {
         // Kategorival panelen med 4 olika knappar som representerar de 4 olika kategorierna
         JPanel categoryPanel = new JPanel();
         categoryPanel.setBackground(Color.decode("#33c1ff"));
-        categoryPanel.setLayout(new GridLayout(2, 2, 10, 10));
+        categoryPanel.setLayout(new GridLayout(3, 2, 10, 10));
 
         // Knapparna
         JButton historyButton = new JButton("Historia");
         JButton geographyButton = new JButton("Geografi");
         JButton sportsButton = new JButton("Sport");
         JButton chemistryButton = new JButton("Kemi");
+        JButton categoryChoice5 = new JButton("Musik");
+        JButton categoryChoice6 = new JButton("Film");
 
         // Lägger till knapparna på categoryPanel
         categoryPanel.add(historyButton);
         categoryPanel.add(geographyButton);
         categoryPanel.add(sportsButton);
         categoryPanel.add(chemistryButton);
+        categoryPanel.add(categoryChoice5);
+        categoryPanel.add(categoryChoice6);
+
+
 
         // Titeln för val av rundor sektionen
-        JLabel roundTitle = new JLabel("Rundor");
-        roundTitle.setFont(titleFont);
-        roundTitle.setForeground(textColor);
-        roundTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+//        JLabel roundTitle = new JLabel("Rundor");
+//        roundTitle.setFont(titleFont);
+//        roundTitle.setForeground(textColor);
+//        roundTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Panelen för val av rundor
-        JPanel roundPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        roundPanel.setBackground(Color.decode("#33c1ff"));
-
-        // En for loop för att lägga till 4 stycken knappar med val från 2 till 5 rundor
-        for (int i = 2; i <= 5; i++) {
-            JButton roundButton = new JButton(String.valueOf(i));
-            roundButton.setPreferredSize(new Dimension(50, 50));
-            final int rounds = i;
-            roundButton.addActionListener(e -> {
-                gameSession.setTotalRounds(rounds);
-
-            });
-            roundPanel.add(roundButton);
-        }
+//        JPanel roundPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+//        roundPanel.setBackground(Color.decode("#33c1ff"));
+//
+//        // En for loop för att lägga till 4 stycken knappar med val från 2 till 5 rundor
+//        for (int i = 2; i <= 5; i++) {
+//            JButton roundButton = new JButton(String.valueOf(i));
+//            roundButton.setPreferredSize(new Dimension(50, 50));
+//            final int rounds = i;
+//            roundButton.addActionListener(e -> {
+//                gameSession.setTotalRounds(rounds);
+//
+//            });
+//            roundPanel.add(roundButton);
+//        }
 
         // Start knappen
         JButton startButton = new JButton("Starta spel");
@@ -149,9 +155,9 @@ public class AppGUI extends JFrame {
         setupPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         setupPanel.add(categoryPanel);
         setupPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-        setupPanel.add(roundTitle);
+//        setupPanel.add(roundTitle);
         setupPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        setupPanel.add(roundPanel);
+//        setupPanel.add(roundPanel);
         setupPanel.add(Box.createRigidArea(new Dimension(20, 30)));
         setupPanel.add(startButton);
 
