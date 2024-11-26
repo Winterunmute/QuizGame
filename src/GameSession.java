@@ -15,6 +15,7 @@ public class GameSession {
     private int currentQuestionIndex;
     private int currentPlayerIndex;
     private int currentRound;
+    private Question currentRoundQuestion;
 
     public GameSession() {
         try {
@@ -64,6 +65,13 @@ public class GameSession {
         currentQuestionIndex = 0;
         currentPlayerIndex = 0;
         currentRound = 1;
+
+        // Hämta första frågan
+        currentRoundQuestion = questionBank.get(currentQuestionIndex++);
+    }
+
+    public Question getCurrentRoundQuestion() {
+        return currentRoundQuestion;
     }
 
     // Hämta nästa fråga
@@ -75,27 +83,36 @@ public class GameSession {
     }
 
     // Kontrollera spelarens svar
-    public boolean checkAnswer(int playerAnswer) {
-        Question currentQuestion = questionBank.get(currentQuestionIndex - 1);
-        boolean isCorrect = (playerAnswer == currentQuestion.getCorrectAnswer());
-        if (isCorrect) {
-            getCurrentPlayer().incrementScore();
+    public boolean checkAnswer(int playerAnswer, String playerName) {
+        boolean isCorrect = (playerAnswer == currentRoundQuestion.getCorrectAnswer());
+        // Uppdatera spelarens poäng
+        for (Player player : players) {
+            if (player.getPlayerName().equals(playerName)) {
+                if (isCorrect) {
+                    player.incrementScore();
+                }
+                break;
+            }
         }
         return isCorrect;
     }
 
-    // Gå till nästa tur
     public void nextTurn() {
         currentPlayerIndex++;
         if (currentPlayerIndex >= players.size()) {
             currentPlayerIndex = 0;
             currentRound++;
+            if (currentQuestionIndex < questionBank.size()) {
+                currentRoundQuestion = questionBank.get(currentQuestionIndex++);
+            } else {
+                currentRoundQuestion = null;
+            }
         }
     }
 
     // Kontrollera om spelet är slut
     public boolean isGameOver() {
-        return currentRound > totalRounds;
+        return currentRound > totalRounds || currentRoundQuestion == null;
     }
 
     // Hämta aktuell spelare
