@@ -25,7 +25,7 @@ public class GameSession {
         }
         players = new ArrayList<>();
         totalPlayers = 0;
-        totalRounds = 3;
+        totalRounds = Configuration.getTotalRounds();
         chosenCategory = "";
         currentQuestionIndex = 0;
         currentPlayerIndex = 0;
@@ -44,10 +44,6 @@ public class GameSession {
 
     public void setChosenCategory(String category) {
         this.chosenCategory = category;
-    }
-
-    public void setTotalRounds(int rounds) {
-        this.totalRounds = rounds;
     }
 
     // Initialisera spelet
