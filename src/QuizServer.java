@@ -15,7 +15,11 @@ public class QuizServer {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Ny klient ansluten: " + clientSocket.getInetAddress());
 
-                MatchMaker.addPlayer(new ClientHandler(clientSocket));
+                // Skapa en ny ClientHandler för den anslutna klienten
+                ClientHandler player = new ClientHandler(clientSocket);
+
+                // Lägg till spelaren till MatchMaker
+                MatchMaker.addPlayer(player);
             }
         } catch (IOException e) {
             System.err.println("Kunde inte starta servern: " + e.getMessage());
@@ -60,21 +64,21 @@ public class QuizServer {
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-                // Hämta spelarens namn först
+                // Hämta spelarens namn
                 out.println("Välkommen! Ange ditt namn:");
                 playerName = in.readLine();
 
                 if (isFirstPlayer) {
                     out.println("Hej " + playerName + "! Väntar på en annan spelare...");
-                    while (opponent == null) {
-                        Thread.sleep(500);
+                    while (opponent == null || opponent.playerName == null) {
+                        Thread.sleep(100);
                     }
                     out.println("En motståndare har anslutit: " + opponent.playerName);
                 } else {
                     out.println(
                             "Hej " + playerName + "! Väntar på att " + opponent.playerName + " ska starta spelet...");
                     while (opponent.playerName == null) {
-                        Thread.sleep(500);
+                        Thread.sleep(100);
                     }
                     out.println("Du spelar mot: " + opponent.playerName);
                 }
@@ -84,6 +88,13 @@ public class QuizServer {
 
             } catch (Exception e) {
                 System.err.println("Error handling client: " + e.getMessage());
+            } finally {
+                // Rensa upp resurser
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    System.err.println("Kunde inte stänga anslutningen: " + e.getMessage());
+                }
             }
         }
 
@@ -91,12 +102,12 @@ public class QuizServer {
             try {
                 int questionsPerRound = Configuration.getQuestionsPerRound();
                 int totalRounds = Configuration.getTotalRounds();
-                totalScore = 0; // Återställ total poäng vid början av spelet
+                totalScore = 0; // Reset total score at the start of the game
 
                 for (int round = 1; round <= totalRounds; round++) {
-                    score = 0; // Återställ rund-poängen
+                    score = 0; // Resetta rundans poäng
 
-                    // Bestäm vems tur det är att välja kategori
+                    // Bestäm vem som ska välja kategori
                     boolean myTurnToChooseCategory = (round == 1) ? isFirstPlayer
                             : ((round % 2 == 1) ? isFirstPlayer : !isFirstPlayer);
 
@@ -113,10 +124,10 @@ public class QuizServer {
                         Collections.shuffle(gameQuestions);
                         opponent.gameQuestions = gameQuestions;
 
-                        // Signalera att kategorin har valts
+                        // Signalera att kategori har valts
                         opponent.categoryChosen = true;
                     } else {
-                        // Vänta på att motståndaren väljer kategori
+                        // Vänta på att motståndaren ska välja kategori
                         out.println(
                                 "Runda " + round + ": Väntar på att " + opponent.playerName + " ska välja kategori...");
                         while (!categoryChosen) {
@@ -125,41 +136,39 @@ public class QuizServer {
                         out.println(opponent.playerName + " valde kategorin: " + chosenCategory);
                     }
 
-                    // Nu fortsätter vi med att spela rundan
-
-                    // Spelaren som valde kategorin spelar först
+                    // Fortsätt med rundan
                     if (myTurnToChooseCategory) {
                         // Denna spelare spelar först
                         out.println("Din tur! Svara på frågorna.");
 
                         playQuestionsForRound(round, questionsPerRound);
 
-                        // Signalera att denna spelare har spelat klart
+                        // Signalera att denna spelare har slutfört sin tur
                         opponent.firstPlayerDone = true;
 
-                        // Vänta på att motståndaren ska spela klart
+                        // Vänta på att motståndaren ska slutföra sin tur
                         out.println("Väntar på att " + opponent.playerName + " ska spela klart sin tur...");
                         while (!opponent.secondPlayerDone) {
                             Thread.sleep(100);
                         }
 
                     } else {
-                        // Denna spelare väntar på att motståndaren ska spela klart
+                        // Vänta på att motståndaren ska slutföra sin tur
                         out.println("Väntar på att " + opponent.playerName + " ska spela klart sin tur...");
                         while (!firstPlayerDone) {
                             Thread.sleep(100);
                         }
 
-                        // Nu är det denna spelares tur
+                        // Nu är det denna spelarens tur
                         out.println("Din tur! Svara på frågorna.");
 
                         playQuestionsForRound(round, questionsPerRound);
 
-                        // Signalera att denna spelare har spelat klart
+                        // Signalera att denna spelare har slutfört sin tur
                         secondPlayerDone = true;
                     }
 
-                    // Visa rundans resultat till båda spelarna
+                    // Visa rundans resultat
                     String roundResult = String.format("Runda %d resultat:\n%s: %d poäng\n%s: %d poäng",
                             round, playerName, score, opponent.playerName, opponent.score);
                     out.println(roundResult);
@@ -169,7 +178,7 @@ public class QuizServer {
 
                     // Återställ flaggor och poäng för nästa runda
                     if (round < totalRounds) {
-                        Thread.sleep(1000); // Ger tid till båda spelarna att hinna se resultatet
+                        Thread.sleep(1000); // Tillåt tid för båda spelarna att se resultatet
                         firstPlayerDone = false;
                         secondPlayerDone = false;
                         opponent.firstPlayerDone = false;
@@ -183,7 +192,7 @@ public class QuizServer {
                     }
                 }
 
-                // Kolla vem som vann spelet
+                // Bestäm vinnaren
                 if (totalScore > opponent.totalScore) {
                     out.println("Grattis! Du vann spelet!");
                 } else if (totalScore < opponent.totalScore) {
@@ -193,7 +202,7 @@ public class QuizServer {
                 }
 
             } catch (Exception e) {
-                System.err.println("Error during game: " + e.getMessage());
+                System.err.println("Fel under spelet: " + e.getMessage());
             }
         }
 

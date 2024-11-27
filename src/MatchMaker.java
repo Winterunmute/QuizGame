@@ -1,34 +1,27 @@
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-// MatchMaker hanterar klienter och parar ihop dem 1 och 1 i varje spel
 public class MatchMaker {
+    private static ConcurrentLinkedQueue<QuizServer.ClientHandler> waitingPlayers = new ConcurrentLinkedQueue<>();
 
-    // Sätter upp en kö för anslutna klienter som väntar på att spela
-    private static final ConcurrentLinkedQueue<QuizServer.ClientHandler> waitingPlayers = new ConcurrentLinkedQueue<>();
-
-    /*
-     * Använder synchronized keyword så att endast en tråd i taget kan köra denna
-     * metod
-     * för att undvika race conditions när spelare matchas
-     */
     public static synchronized void addPlayer(QuizServer.ClientHandler player) {
-        if (waitingPlayers.isEmpty()) {
-            // Första spelaren anländer
-            player.setIsFirstPlayer(true);
-            waitingPlayers.add(player);
-            // Starta tråden för första spelaren
-            new Thread(player).start();
-        } else {
-            // Andra spelaren anländer - matcha med väntande spelare
-            QuizServer.ClientHandler firstPlayer = waitingPlayers.poll();
-            player.setIsFirstPlayer(false);
+        waitingPlayers.add(player);
 
-            // Koppla ihop spelarna
-            firstPlayer.setOpponent(player);
-            player.setOpponent(firstPlayer);
+        // Om det finns minst två spelare som väntar, paara ihop dem
+        if (waitingPlayers.size() >= 2) {
+            QuizServer.ClientHandler player1 = waitingPlayers.poll();
+            QuizServer.ClientHandler player2 = waitingPlayers.poll();
 
-            // Starta tråden för andra spelaren
-            new Thread(player).start();
+            // Sätt motståndare
+            player1.setOpponent(player2);
+            player2.setOpponent(player1);
+
+            // Sätt vilken spelare som är först
+            player1.setIsFirstPlayer(true);
+            player2.setIsFirstPlayer(false);
+
+            // Starta trådar för båda spelarna
+            new Thread(player1).start();
+            new Thread(player2).start();
         }
     }
 }
