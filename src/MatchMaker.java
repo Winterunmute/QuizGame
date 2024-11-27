@@ -1,15 +1,15 @@
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MatchMaker {
-    private static ConcurrentLinkedQueue<QuizServer.ClientHandler> waitingPlayers = new ConcurrentLinkedQueue<>();
+    private static ConcurrentLinkedQueue<ClientHandler> waitingPlayers = new ConcurrentLinkedQueue<>();
 
-    public static synchronized void addPlayer(QuizServer.ClientHandler player) {
+    public static synchronized void addPlayer(ClientHandler player) {
         waitingPlayers.add(player);
 
         // Om det finns minst två spelare som väntar, paara ihop dem
         if (waitingPlayers.size() >= 2) {
-            QuizServer.ClientHandler player1 = waitingPlayers.poll();
-            QuizServer.ClientHandler player2 = waitingPlayers.poll();
+            ClientHandler player1 = waitingPlayers.poll();
+            ClientHandler player2 = waitingPlayers.poll();
 
             // Sätt motståndare
             player1.setOpponent(player2);

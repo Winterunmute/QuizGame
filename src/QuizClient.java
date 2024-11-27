@@ -30,7 +30,8 @@ public class QuizClient {
             while ((serverMessage = in.readLine()) != null) {
                 if (serverMessage.startsWith("Fråga: ")) {
                     System.out.println("\n" + serverMessage);
-                    // Read and display options
+
+                    // Läs och visa alternativ
                     serverMessage = in.readLine(); // "Välj ett alternativ:"
                     System.out.println(serverMessage);
                     for (int i = 0; i < 4; i++) {
