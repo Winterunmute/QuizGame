@@ -6,7 +6,6 @@ import java.util.List;
 
 public class QuizServer {
     private static final int PORT = 45555;
-    private static ClientHandler waitingClient = null;
 
     public QuizServer() {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -16,28 +15,7 @@ public class QuizServer {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Ny klient ansluten: " + clientSocket.getInetAddress());
 
-                ClientHandler clientHandler;
-
-                synchronized (QuizServer.class) {
-                    if (waitingClient == null) {
-                        // No waiting client, set this client as first player
-                        clientHandler = new ClientHandler(clientSocket, true);
-                        waitingClient = clientHandler;
-                        clientHandler.sendMessage("Väntar på att en annan spelare ska ansluta...");
-                    } else {
-                        // Pair with waiting client, set this as second player
-                        clientHandler = new ClientHandler(clientSocket, false);
-                        waitingClient.setOpponent(clientHandler);
-                        clientHandler.setOpponent(waitingClient);
-                        new Thread(waitingClient).start();
-                        new Thread(clientHandler).start();
-                        waitingClient = null;
-                        continue; // Both threads started, continue to next loop
-                    }
-                }
-
-                // For first player, their thread will wait until paired
-                new Thread(clientHandler).start();
+                MatchMaker.addPlayer(new ClientHandler(clientSocket));
             }
         } catch (IOException e) {
             System.err.println("Kunde inte starta servern: " + e.getMessage());
@@ -48,179 +26,156 @@ public class QuizServer {
         new QuizServer();
     }
 
-    // Innre klass för att hantera klientkommunikation
+    // Inner class for handling client communication
     public static class ClientHandler implements Runnable {
         private final Socket clientSocket;
         private PrintWriter out;
         private BufferedReader in;
         private ClientHandler opponent;
-        private String playerName;
-        private int score;
         private boolean isFirstPlayer;
         private String chosenCategory;
-        private boolean hasFinishedRound;
+        private List<Question> gameQuestions;
+        private int score = -1;
+        private String playerName;
 
-        public ClientHandler(Socket clientSocket, boolean isFirstPlayer) {
+        public ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
-            this.isFirstPlayer = isFirstPlayer;
-            this.score = 0;
+            this.score = -1;
         }
 
         public void setOpponent(ClientHandler opponent) {
             this.opponent = opponent;
         }
 
-        public void sendMessage(String message) {
-            if (out != null) {
-                out.println(message);
-            }
+        public void setIsFirstPlayer(boolean isFirstPlayer) {
+            this.isFirstPlayer = isFirstPlayer;
         }
 
         @Override
         public void run() {
-            try (
-                    BufferedReader inLocal = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    PrintWriter outLocal = new PrintWriter(clientSocket.getOutputStream(), true)) {
-                this.in = inLocal;
-                this.out = outLocal;
+            try {
+                out = new PrintWriter(clientSocket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-                // Initiera frågehanteraren
-                QuestionManager questionManager = new QuestionManager("questions.properties");
-
-                // Fråga efter spelarnamn
-                out.println("Ange ditt namn:");
+                // Get player name first
+                out.println("Välkommen! Ange ditt namn:");
                 playerName = in.readLine();
 
                 if (isFirstPlayer) {
-                    out.println("Väntar på att en annan spelare ska ansluta...");
-                    // Vänta tills en motståndare har anslutit
+                    out.println("Hej " + playerName + "! Väntar på en annan spelare...");
                     while (opponent == null) {
-                        Thread.sleep(100);
+                        Thread.sleep(500);
                     }
-                }
+                    out.println("En motståndare har anslutit: " + opponent.playerName);
 
-                // Kategori-val för första spelaren
-                if (isFirstPlayer) {
-                    // Visa tillgängliga kategorier
-                    List<String> categories = questionManager.getAllQuestions()
-                            .stream()
-                            .map(Question::getCategory)
-                            .distinct()
-                            .toList();
+                    // First player chooses category
+                    QuestionManager questionManager = new QuestionManager("questions.properties");
+                    List<String> categories = questionManager.getAllCategories();
                     out.println("Välj kategori: " + String.join(", ", categories));
-                    chosenCategory = in.readLine().trim();
+                    chosenCategory = in.readLine();
                     opponent.chosenCategory = chosenCategory;
-                    opponent.sendMessage("Spelare " + playerName + " valde kategori: " + chosenCategory);
+
+                    // Get questions and share with opponent
+                    gameQuestions = questionManager.getQuestionsByCategory(chosenCategory);
+                    Collections.shuffle(gameQuestions);
+                    opponent.gameQuestions = gameQuestions;
                 } else {
-                    out.println("Väntar på att " + opponent.playerName + " ska välja kategori...");
+                    out.println("Hej " + playerName + "! " + opponent.playerName + " väljer kategori...");
                     while (chosenCategory == null) {
-                        Thread.sleep(100);
+                        Thread.sleep(500);
                     }
+                    out.println(opponent.playerName + " valde kategorin: " + chosenCategory);
                 }
 
-                // Spela rundor
+                // Play game
+                playGame();
+
+            } catch (Exception e) {
+                System.err.println("Error handling client: " + e.getMessage());
+            }
+        }
+
+        private void playGame() {
+            try {
+                int questionsPerRound = Configuration.getQuestionsPerRound();
                 int totalRounds = Configuration.getTotalRounds();
+
                 for (int round = 1; round <= totalRounds; round++) {
-                    playRound(round, questionManager);
-                }
+                    // First player plays their questions
+                    if (isFirstPlayer) {
+                        out.println("Runda " + round + " börjar! Din tur!");
+                        for (int i = 0; i < questionsPerRound; i++) {
+                            Question question = gameQuestions.get((round - 1) * questionsPerRound + i);
+                            out.println("Fråga: " + question.getQuestion());
+                            out.println("Välj ett alternativ:");
+                            String[] options = question.getOptions();
+                            for (int j = 0; j < options.length; j++) {
+                                out.println((j + 1) + ". " + options[j]);
+                            }
 
-                // Visa slutresultat
-                showFinalResults();
-
-            } catch (IOException | InterruptedException e) {
-                System.err.println("Fel vid hantering av klient: " + e.getMessage());
-            }
-        }
-
-        private synchronized void playRound(int round, QuestionManager questionManager)
-                throws IOException, InterruptedException {
-            out.println("Runda " + round);
-
-            // Hämta frågor för denna runda
-            List<Question> questions = questionManager.getQuestionsByCategory(chosenCategory);
-            Collections.shuffle(questions);
-            List<Question> roundQuestions = questions.subList(0, Math.min(3, questions.size()));
-
-            if (isFirstPlayer) {
-                // First player's turn
-                out.println("Din tur att spela!");
-                opponent.sendMessage("Väntar på att " + playerName + " ska spela klart...");
-                askQuestions(roundQuestions);
-                hasFinishedRound = true;
-
-                // Signal opponent it's their turn
-                synchronized (opponent) {
-                    opponent.notify();
-                }
-
-                // Wait for opponent to finish
-                synchronized (this) {
-                    while (!opponent.hasFinishedRound) {
-                        wait();
-                    }
-                }
-            } else {
-                // Second player waits for their turn
-                synchronized (this) {
-                    while (!opponent.hasFinishedRound) {
-                        wait();
-                    }
-                }
-
-                out.println("Din tur att spela!");
-                askQuestions(roundQuestions);
-                hasFinishedRound = true;
-
-                // Signal first player we're done
-                synchronized (opponent) {
-                    opponent.notify();
-                }
-            }
-
-            // Show round results only after both players have finished
-            showRoundResults(round);
-
-            // Reset flags for next round
-            hasFinishedRound = false;
-            opponent.hasFinishedRound = false;
-        }
-
-        private void askQuestions(List<Question> questions) throws IOException {
-            for (Question question : questions) {
-                out.println("Fråga: " + question.getQuestion());
-                out.println("Alternativ: " + String.join(", ", question.getOptions()));
-
-                try {
-                    String answer = in.readLine().trim();
-                    int answerNum = Integer.parseInt(answer);
-                    if (answerNum == question.getCorrectAnswer()) {
-                        score++;
-                        out.println("Rätt svar!");
+                            String answer = in.readLine();
+                            if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
+                                score++;
+                                out.println("Rätt!");
+                            } else {
+                                out.println("Fel!");
+                            }
+                        }
+                        out.println("Väntar på att " + opponent.playerName + " ska spela klart rundan...");
+                        while (opponent.score == -1) {
+                            Thread.sleep(100);
+                        }
                     } else {
-                        out.println("Fel svar! Rätt svar var: " +
-                                question.getOptions()[question.getCorrectAnswer() - 1]);
+                        // Second player waits for first player
+                        out.println("Väntar på att " + opponent.playerName + " ska spela klart sin tur...");
+                        while (opponent.score == -1) {
+                            Thread.sleep(100);
+                        }
+
+                        out.println("Din tur!");
+                        for (int i = 0; i < questionsPerRound; i++) {
+                            Question question = gameQuestions.get((round - 1) * questionsPerRound + i);
+                            out.println("Fråga: " + question.getQuestion());
+                            out.println("Välj ett alternativ:");
+                            String[] options = question.getOptions();
+                            for (int j = 0; j < options.length; j++) {
+                                out.println((j + 1) + ". " + options[j]);
+                            }
+
+                            String answer = in.readLine();
+                            if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
+                                score++;
+                                out.println("Rätt!");
+                            } else {
+                                out.println("Fel!");
+                            }
+                        }
                     }
-                } catch (NumberFormatException e) {
-                    out.println("Ogiltigt svar, hoppar över frågan.");
+
+                    // Show round results to both players
+                    String roundResult = String.format("Runda %d resultat:\n%s: %d poäng\n%s: %d poäng",
+                            round, playerName, score, opponent.playerName, opponent.score);
+                    out.println(roundResult);
+
+                    // Reset scores for next round
+                    if (round < totalRounds) {
+                        score = -1;
+                        Thread.sleep(1000); // Give time for both players to see results
+                    }
                 }
+
+                // Show final results after all rounds
+                if (score > opponent.score) {
+                    out.println("Grattis! Du vann spelet!");
+                } else if (score < opponent.score) {
+                    out.println("Tyvärr, " + opponent.playerName + " vann spelet!");
+                } else {
+                    out.println("Det blev oavgjort!");
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error during game: " + e.getMessage());
             }
-        }
-
-        private void showRoundResults(int round) {
-            String scoreMessage = String.format("Poängställning efter runda %d:\n%s: %d poäng\n%s: %d poäng",
-                    round, playerName, score, opponent.playerName, opponent.score);
-            sendMessage(scoreMessage);
-            opponent.sendMessage(scoreMessage);
-        }
-
-        private void showFinalResults() {
-            String finalMessage = "SLUTRESULTAT:\n" +
-                    playerName + ": " + score + " poäng\n" +
-                    opponent.playerName + ": " + opponent.score + " poäng\n" +
-                    "Vinnare: " + (score > opponent.score ? playerName
-                            : score < opponent.score ? opponent.playerName : "Oavgjort!");
-            sendMessage(finalMessage);
-            opponent.sendMessage(finalMessage);
         }
     }
 }

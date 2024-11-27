@@ -19,6 +19,22 @@ public class Configuration {
     }
 
     public static int getTotalRounds() {
-        return Integer.parseInt(properties.getProperty("total_rounds", "3"));
+        return Integer.parseInt(properties.getProperty("total_rounds", "2"));
+    }
+
+    public static int getQuestionsPerRound() {
+        return Integer.parseInt(properties.getProperty("questions_per_round", "3"));
+    }
+
+    public static boolean showCategories() {
+        return Boolean.parseBoolean(properties.getProperty("show_categories", "true"));
+    }
+
+    public static boolean allowSameCategory() {
+        return Boolean.parseBoolean(properties.getProperty("allow_same_category", "true"));
+    }
+
+    public static boolean showRoundNumber() {
+        return Boolean.parseBoolean(properties.getProperty("show_round_number", "true"));
     }
 }

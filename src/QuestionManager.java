@@ -17,7 +17,6 @@ public class QuestionManager {
             properties.load(new InputStreamReader(input, StandardCharsets.UTF_8));
         }
 
-
         // Skapa alla frågor och lagra dem i allQuestions
         int index = 1;
         while (properties.containsKey("question" + index)) {
@@ -48,5 +47,13 @@ public class QuestionManager {
             }
         }
         return filteredQuestions;
+    }
+
+    public List<String> getAllCategories() {
+        Set<String> categories = new HashSet<>();
+        for (Question question : allQuestions) {
+            categories.add(question.getCategory());
+        }
+        return new ArrayList<>(categories);
     }
 }
