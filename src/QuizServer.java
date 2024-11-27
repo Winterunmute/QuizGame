@@ -37,6 +37,9 @@ public class QuizServer {
         private List<Question> gameQuestions;
         private int score = -1;
         private String playerName;
+        private boolean firstPlayerDone = false;
+        private boolean secondPlayerDone = false;
+        private int totalScore = 0;
 
         public ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
@@ -99,8 +102,11 @@ public class QuizServer {
             try {
                 int questionsPerRound = Configuration.getQuestionsPerRound();
                 int totalRounds = Configuration.getTotalRounds();
+                totalScore = 0; // Reset total score at start of game
 
                 for (int round = 1; round <= totalRounds; round++) {
+                    score = 0; // Reset round score (not -1)
+
                     // First player plays their questions
                     if (isFirstPlayer) {
                         out.println("Runda " + round + " börjar! Din tur!");
@@ -116,19 +122,22 @@ public class QuizServer {
                             String answer = in.readLine();
                             if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
                                 score++;
+                                totalScore++; // Increment total score
                                 out.println("Rätt!");
                             } else {
                                 out.println("Fel!");
                             }
                         }
+                        // Signal completion to opponent
+                        opponent.firstPlayerDone = true;
                         out.println("Väntar på att " + opponent.playerName + " ska spela klart rundan...");
-                        while (opponent.score == -1) {
+                        while (!opponent.secondPlayerDone) {
                             Thread.sleep(100);
                         }
                     } else {
                         // Second player waits for first player
                         out.println("Väntar på att " + opponent.playerName + " ska spela klart sin tur...");
-                        while (opponent.score == -1) {
+                        while (!firstPlayerDone) {
                             Thread.sleep(100);
                         }
 
@@ -145,12 +154,19 @@ public class QuizServer {
                             String answer = in.readLine();
                             if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
                                 score++;
+                                totalScore++; // Increment total score
                                 out.println("Rätt!");
                             } else {
                                 out.println("Fel!");
                             }
                         }
+                        // Signal completion
+                        secondPlayerDone = true;
                     }
+
+                    // Reset flags for next round
+                    firstPlayerDone = false;
+                    secondPlayerDone = false;
 
                     // Show round results to both players
                     String roundResult = String.format("Runda %d resultat:\n%s: %d poäng\n%s: %d poäng",
@@ -164,10 +180,10 @@ public class QuizServer {
                     }
                 }
 
-                // Show final results after all rounds
-                if (score > opponent.score) {
+                // Use totalScore instead of score for final results
+                if (totalScore > opponent.totalScore) {
                     out.println("Grattis! Du vann spelet!");
-                } else if (score < opponent.score) {
+                } else if (totalScore < opponent.totalScore) {
                     out.println("Tyvärr, " + opponent.playerName + " vann spelet!");
                 } else {
                     out.println("Det blev oavgjort!");
