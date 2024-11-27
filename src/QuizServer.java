@@ -164,19 +164,31 @@ public class QuizServer {
                         secondPlayerDone = true;
                     }
 
-                    // Reset flags for next round
-                    firstPlayerDone = false;
-                    secondPlayerDone = false;
+                    // Wait for both players to complete before resetting
+                    if (isFirstPlayer) {
+                        while (!opponent.secondPlayerDone) {
+                            Thread.sleep(100);
+                        }
+                    } else {
+                        while (!firstPlayerDone) {
+                            Thread.sleep(100);
+                        }
+                    }
 
                     // Show round results to both players
                     String roundResult = String.format("Runda %d resultat:\n%s: %d poäng\n%s: %d poäng",
                             round, playerName, score, opponent.playerName, opponent.score);
                     out.println(roundResult);
 
-                    // Reset scores for next round
+                    // Reset flags and scores for next round
                     if (round < totalRounds) {
-                        score = -1;
                         Thread.sleep(1000); // Give time for both players to see results
+                        if (isFirstPlayer) {
+                            firstPlayerDone = false;
+                            opponent.secondPlayerDone = false;
+                            score = 0;
+                            opponent.score = 0;
+                        }
                     }
                 }
 
