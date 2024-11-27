@@ -33,17 +33,17 @@ public class QuizServer {
         private BufferedReader in;
         private ClientHandler opponent;
         private boolean isFirstPlayer;
-        private String chosenCategory;
+        private volatile String chosenCategory;
         private List<Question> gameQuestions;
-        private int score = -1;
+        private int score;
         private String playerName;
-        private boolean firstPlayerDone = false;
-        private boolean secondPlayerDone = false;
+        private volatile boolean firstPlayerDone = false;
+        private volatile boolean secondPlayerDone = false;
         private int totalScore = 0;
+        private volatile boolean categoryChosen = false;
 
         public ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
-            this.score = -1;
         }
 
         public void setOpponent(ClientHandler opponent) {
@@ -70,27 +70,16 @@ public class QuizServer {
                         Thread.sleep(500);
                     }
                     out.println("En motståndare har anslutit: " + opponent.playerName);
-
-                    // Första spelaren väljer kategori
-                    QuestionManager questionManager = new QuestionManager("questions.properties");
-                    List<String> categories = questionManager.getAllCategories();
-                    out.println("Välj kategori: " + String.join(", ", categories));
-                    chosenCategory = in.readLine();
-                    opponent.chosenCategory = chosenCategory;
-
-                    // Hämta frågor och dela med motståndaren
-                    gameQuestions = questionManager.getQuestionsByCategory(chosenCategory);
-                    Collections.shuffle(gameQuestions);
-                    opponent.gameQuestions = gameQuestions;
                 } else {
-                    out.println("Hej " + playerName + "! " + opponent.playerName + " väljer kategori...");
-                    while (chosenCategory == null) {
+                    out.println(
+                            "Hej " + playerName + "! Väntar på att " + opponent.playerName + " ska starta spelet...");
+                    while (opponent.playerName == null) {
                         Thread.sleep(500);
                     }
-                    out.println(opponent.playerName + " valde kategorin: " + chosenCategory);
+                    out.println("Du spelar mot: " + opponent.playerName);
                 }
 
-                // Play game
+                // Starta spelet
                 playGame();
 
             } catch (Exception e) {
@@ -107,88 +96,90 @@ public class QuizServer {
                 for (int round = 1; round <= totalRounds; round++) {
                     score = 0; // Återställ rund-poängen
 
-                    // Första spelaren spelar sina frågor
-                    if (isFirstPlayer) {
-                        out.println("Runda " + round + " börjar! Din tur!");
-                        for (int i = 0; i < questionsPerRound; i++) {
-                            Question question = gameQuestions.get((round - 1) * questionsPerRound + i);
-                            out.println("Fråga: " + question.getQuestion());
-                            out.println("Välj ett alternativ:");
-                            String[] options = question.getOptions();
-                            for (int j = 0; j < options.length; j++) {
-                                out.println((j + 1) + ". " + options[j]);
-                            }
+                    // Bestäm vems tur det är att välja kategori
+                    boolean myTurnToChooseCategory = (round == 1) ? isFirstPlayer
+                            : ((round % 2 == 1) ? isFirstPlayer : !isFirstPlayer);
 
-                            String answer = in.readLine();
-                            if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
-                                score++;
-                                totalScore++;
-                                out.println("Rätt!");
-                            } else {
-                                out.println("Fel!");
-                            }
+                    if (myTurnToChooseCategory) {
+                        // Denna spelare väljer kategori
+                        QuestionManager questionManager = new QuestionManager("questions.properties");
+                        List<String> categories = questionManager.getAllCategories();
+                        out.println("Runda " + round + ": Välj kategori: " + String.join(", ", categories));
+                        chosenCategory = in.readLine();
+                        opponent.chosenCategory = chosenCategory;
+
+                        // Hämta frågor och dela med motståndaren
+                        gameQuestions = questionManager.getQuestionsByCategory(chosenCategory);
+                        Collections.shuffle(gameQuestions);
+                        opponent.gameQuestions = gameQuestions;
+
+                        // Signalera att kategorin har valts
+                        opponent.categoryChosen = true;
+                    } else {
+                        // Vänta på att motståndaren väljer kategori
+                        out.println(
+                                "Runda " + round + ": Väntar på att " + opponent.playerName + " ska välja kategori...");
+                        while (!categoryChosen) {
+                            Thread.sleep(100);
                         }
-                        // Signalera att spelaren har spelat klart sin runda
+                        out.println(opponent.playerName + " valde kategorin: " + chosenCategory);
+                    }
+
+                    // Nu fortsätter vi med att spela rundan
+
+                    // Spelaren som valde kategorin spelar först
+                    if (myTurnToChooseCategory) {
+                        // Denna spelare spelar först
+                        out.println("Din tur! Svara på frågorna.");
+
+                        playQuestionsForRound(round, questionsPerRound);
+
+                        // Signalera att denna spelare har spelat klart
                         opponent.firstPlayerDone = true;
-                        out.println("Väntar på att " + opponent.playerName + " ska spela klart rundan...");
+
+                        // Vänta på att motståndaren ska spela klart
+                        out.println("Väntar på att " + opponent.playerName + " ska spela klart sin tur...");
                         while (!opponent.secondPlayerDone) {
                             Thread.sleep(100);
                         }
+
                     } else {
-                        // Andra spelaren väntar på att första spelaren ska spela klart sin tur
+                        // Denna spelare väntar på att motståndaren ska spela klart
                         out.println("Väntar på att " + opponent.playerName + " ska spela klart sin tur...");
                         while (!firstPlayerDone) {
                             Thread.sleep(100);
                         }
 
-                        out.println("Din tur!");
-                        for (int i = 0; i < questionsPerRound; i++) {
-                            Question question = gameQuestions.get((round - 1) * questionsPerRound + i);
-                            out.println("Fråga: " + question.getQuestion());
-                            out.println("Välj ett alternativ:");
-                            String[] options = question.getOptions();
-                            for (int j = 0; j < options.length; j++) {
-                                out.println((j + 1) + ". " + options[j]);
-                            }
+                        // Nu är det denna spelares tur
+                        out.println("Din tur! Svara på frågorna.");
 
-                            String answer = in.readLine();
-                            if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
-                                score++;
-                                totalScore++;
-                                out.println("Rätt!");
-                            } else {
-                                out.println("Fel!");
-                            }
-                        }
-                        // Signalera att spelaren har spelat klart sin runda
+                        playQuestionsForRound(round, questionsPerRound);
+
+                        // Signalera att denna spelare har spelat klart
                         secondPlayerDone = true;
                     }
 
-                    // Vänta på att båda spelarna har spelat klart sin runda
-                    if (isFirstPlayer) {
-                        while (!opponent.secondPlayerDone) {
-                            Thread.sleep(100);
-                        }
-                    } else {
-                        while (!firstPlayerDone) {
-                            Thread.sleep(100);
-                        }
-                    }
-
-                    // Show round results to both players
+                    // Visa rundans resultat till båda spelarna
                     String roundResult = String.format("Runda %d resultat:\n%s: %d poäng\n%s: %d poäng",
                             round, playerName, score, opponent.playerName, opponent.score);
                     out.println(roundResult);
 
+                    // Uppdatera total poäng
+                    totalScore += score;
+
                     // Återställ flaggor och poäng för nästa runda
                     if (round < totalRounds) {
-                        Thread.sleep(1000); // Ger tid till båda spelarna at hinna se resultatet
-                        if (isFirstPlayer) {
-                            firstPlayerDone = false;
-                            opponent.secondPlayerDone = false;
-                            score = 0;
-                            opponent.score = 0;
-                        }
+                        Thread.sleep(1000); // Ger tid till båda spelarna att hinna se resultatet
+                        firstPlayerDone = false;
+                        secondPlayerDone = false;
+                        opponent.firstPlayerDone = false;
+                        opponent.secondPlayerDone = false;
+                        score = 0;
+                        opponent.score = 0;
+                        chosenCategory = null;
+                        opponent.chosenCategory = null;
+                        categoryChosen = false;
+                        opponent.categoryChosen = false;
                     }
                 }
 
@@ -203,6 +194,26 @@ public class QuizServer {
 
             } catch (Exception e) {
                 System.err.println("Error during game: " + e.getMessage());
+            }
+        }
+
+        private void playQuestionsForRound(int round, int questionsPerRound) throws IOException {
+            for (int i = 0; i < questionsPerRound; i++) {
+                Question question = gameQuestions.get((round - 1) * questionsPerRound + i);
+                out.println("Fråga: " + question.getQuestion());
+                out.println("Välj ett alternativ:");
+                String[] options = question.getOptions();
+                for (int j = 0; j < options.length; j++) {
+                    out.println((j + 1) + ". " + options[j]);
+                }
+
+                String answer = in.readLine();
+                if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
+                    score++;
+                    out.println("Rätt!");
+                } else {
+                    out.println("Fel!");
+                }
             }
         }
     }
