@@ -1,40 +1,54 @@
 import java.io.*;
-import java.net.*;
-import java.util.Scanner;
+import java.net.Socket;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class QuizClient {
-    private static final String SERVER_ADDRESS = "127.0.0.1";
+
+    // Adressen till servern
+    private static final InetAddress SERVER_ADDRESS;
+    // Porten som servern lyssnar på
     private static final int SERVER_PORT = 45555;
 
+    static {
+        try {
+            SERVER_ADDRESS = InetAddress.getByName("localhost"); // Sätter upp adressen till servern
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Kunde inte hitta servern", e);
+        }
+    }
+
     public static void main(String[] args) {
-        System.out.println("Försöker ansluta till servern på " + SERVER_ADDRESS + ":" + SERVER_PORT + "...");
-
         try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             Scanner scanner = new Scanner(System.in)) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader console = new BufferedReader(new InputStreamReader(System.in))) {
 
-            System.out.println("Ansluten till servern!");
+            System.out.println("Ansluten till Quiz Server.");
 
             String serverMessage;
             while ((serverMessage = in.readLine()) != null) {
-                if (serverMessage.startsWith("QUESTION:")) {
-                    System.out.println("\n" + serverMessage.substring(9)); // Visa frågan
-
-                    // Visa alternativen
-                    for (int i = 0; i < 4; i++) {
-                        System.out.println(in.readLine());
-                    }
-
-                    // Låt spelaren svara
-                    System.out.print("Ditt svar (1-4): ");
-                    String answer = scanner.nextLine();
-                    out.println(answer); // Skicka svaret till servern
-
-                    // Visa feedback
-                    System.out.println(in.readLine());
-                } else {
+                if (serverMessage.startsWith("Fråga: ")) {
+                    System.out.println("\n" + serverMessage);
+                    // Read and display options
+                    serverMessage = in.readLine(); // "Välj ett alternativ:"
                     System.out.println(serverMessage);
+                    for (int i = 0; i < 4; i++) {
+                        String option = in.readLine();
+                        System.out.println(option);
+                    }
+                    System.out.print("Din input (1-4): ");
+                    String input = console.readLine();
+                    out.println(input);
+                } else {
+                    System.out.println("Server: " + serverMessage);
+
+                    if (serverMessage.contains("Ange ditt namn") ||
+                            serverMessage.contains("Välj kategori")) {
+                        System.out.print("Din input: ");
+                        String input = console.readLine();
+                        out.println(input);
+                    }
                 }
             }
         } catch (IOException e) {
