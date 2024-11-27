@@ -26,7 +26,7 @@ public class QuizServer {
         new QuizServer();
     }
 
-    // Inner class for handling client communication
+    // Klass för att hantera klientkommunikation
     public static class ClientHandler implements Runnable {
         private final Socket clientSocket;
         private PrintWriter out;
@@ -60,7 +60,7 @@ public class QuizServer {
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-                // Get player name first
+                // Hämta spelarens namn först
                 out.println("Välkommen! Ange ditt namn:");
                 playerName = in.readLine();
 
@@ -71,14 +71,14 @@ public class QuizServer {
                     }
                     out.println("En motståndare har anslutit: " + opponent.playerName);
 
-                    // First player chooses category
+                    // Första spelaren väljer kategori
                     QuestionManager questionManager = new QuestionManager("questions.properties");
                     List<String> categories = questionManager.getAllCategories();
                     out.println("Välj kategori: " + String.join(", ", categories));
                     chosenCategory = in.readLine();
                     opponent.chosenCategory = chosenCategory;
 
-                    // Get questions and share with opponent
+                    // Hämta frågor och dela med motståndaren
                     gameQuestions = questionManager.getQuestionsByCategory(chosenCategory);
                     Collections.shuffle(gameQuestions);
                     opponent.gameQuestions = gameQuestions;
@@ -102,12 +102,12 @@ public class QuizServer {
             try {
                 int questionsPerRound = Configuration.getQuestionsPerRound();
                 int totalRounds = Configuration.getTotalRounds();
-                totalScore = 0; // Reset total score at start of game
+                totalScore = 0; // Återställ total poäng vid början av spelet
 
                 for (int round = 1; round <= totalRounds; round++) {
-                    score = 0; // Reset round score (not -1)
+                    score = 0; // Återställ rund-poängen
 
-                    // First player plays their questions
+                    // Första spelaren spelar sina frågor
                     if (isFirstPlayer) {
                         out.println("Runda " + round + " börjar! Din tur!");
                         for (int i = 0; i < questionsPerRound; i++) {
@@ -122,20 +122,20 @@ public class QuizServer {
                             String answer = in.readLine();
                             if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
                                 score++;
-                                totalScore++; // Increment total score
+                                totalScore++;
                                 out.println("Rätt!");
                             } else {
                                 out.println("Fel!");
                             }
                         }
-                        // Signal completion to opponent
+                        // Signalera att spelaren har spelat klart sin runda
                         opponent.firstPlayerDone = true;
                         out.println("Väntar på att " + opponent.playerName + " ska spela klart rundan...");
                         while (!opponent.secondPlayerDone) {
                             Thread.sleep(100);
                         }
                     } else {
-                        // Second player waits for first player
+                        // Andra spelaren väntar på att första spelaren ska spela klart sin tur
                         out.println("Väntar på att " + opponent.playerName + " ska spela klart sin tur...");
                         while (!firstPlayerDone) {
                             Thread.sleep(100);
@@ -154,17 +154,17 @@ public class QuizServer {
                             String answer = in.readLine();
                             if (Integer.parseInt(answer) == question.getCorrectAnswer()) {
                                 score++;
-                                totalScore++; // Increment total score
+                                totalScore++;
                                 out.println("Rätt!");
                             } else {
                                 out.println("Fel!");
                             }
                         }
-                        // Signal completion
+                        // Signalera att spelaren har spelat klart sin runda
                         secondPlayerDone = true;
                     }
 
-                    // Wait for both players to complete before resetting
+                    // Vänta på att båda spelarna har spelat klart sin runda
                     if (isFirstPlayer) {
                         while (!opponent.secondPlayerDone) {
                             Thread.sleep(100);
@@ -180,9 +180,9 @@ public class QuizServer {
                             round, playerName, score, opponent.playerName, opponent.score);
                     out.println(roundResult);
 
-                    // Reset flags and scores for next round
+                    // Återställ flaggor och poäng för nästa runda
                     if (round < totalRounds) {
-                        Thread.sleep(1000); // Give time for both players to see results
+                        Thread.sleep(1000); // Ger tid till båda spelarna at hinna se resultatet
                         if (isFirstPlayer) {
                             firstPlayerDone = false;
                             opponent.secondPlayerDone = false;
@@ -192,7 +192,7 @@ public class QuizServer {
                     }
                 }
 
-                // Use totalScore instead of score for final results
+                // Kolla vem som vann spelet
                 if (totalScore > opponent.totalScore) {
                     out.println("Grattis! Du vann spelet!");
                 } else if (totalScore < opponent.totalScore) {
