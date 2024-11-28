@@ -66,7 +66,7 @@ public class QuizClientGUI extends JFrame {
         titleLabel.setForeground(textColor);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel nameLabel = new JLabel("Enter your name:");
+        JLabel nameLabel = new JLabel("Ange ditt användarnamn:");
         nameLabel.setFont(titleFontSmaller);
         nameLabel.setForeground(textColor);
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -76,7 +76,7 @@ public class QuizClientGUI extends JFrame {
         nameField.setFont(inputFieldFont);
         nameField.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton startButton = new JButton("Join Game");
+        JButton startButton = new JButton("Gå med i spel");
         startButton.setFont(titleFontSmaller);
         startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         startButton.addActionListener(e -> {
@@ -102,7 +102,7 @@ public class QuizClientGUI extends JFrame {
         categoryPanel = new JPanel(new BorderLayout());
         categoryPanel.setBackground(bgColor);
 
-        JLabel categoryLabel = new JLabel("Choose Category");
+        JLabel categoryLabel = new JLabel("Välj kategori");
         categoryLabel.setFont(titleFont);
         categoryLabel.setForeground(textColor);
         categoryLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -130,7 +130,7 @@ public class QuizClientGUI extends JFrame {
         gamePanel = new JPanel(new BorderLayout(10, 10));
         gamePanel.setBackground(bgColor);
 
-        statusLabel = new JLabel("Waiting for game to start...");
+        statusLabel = new JLabel("Väntar på spel att starta...");
         statusLabel.setFont(titleFontSmaller);
         statusLabel.setForeground(textColor);
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -150,8 +150,12 @@ public class QuizClientGUI extends JFrame {
             answerButtons[i].setFont(titleFontSmaller);
             answerButtons[i].setBackground(Color.WHITE);
             answerButtons[i].setForeground(Color.BLACK);
+            answerButtons[i].setOpaque(true);
+            answerButtons[i].setBorderPainted(true);
             final int answer = i + 1;
-            answerButtons[i].addActionListener(e -> out.println(String.valueOf(answer)));
+            answerButtons[i].addActionListener(e -> {
+                out.println(String.valueOf(answer));
+            });
             buttonsPanel.add(answerButtons[i]);
         }
 
@@ -218,6 +222,15 @@ public class QuizClientGUI extends JFrame {
             int optionNum = Character.getNumericValue(message.charAt(0)) - 1;
             answerButtons[optionNum].setText(message.substring(3).trim());
         }
+        // Om meddelandet är en svar
+        else if (message.startsWith("ANSWER:")) {
+            String[] parts = message.split(":");
+            if (parts.length == 3) {
+                int selectedAnswer = Integer.parseInt(parts[1]);
+                int correctAnswer = Integer.parseInt(parts[2]);
+                handleAnswerSelection(selectedAnswer, correctAnswer);
+            }
+        }
         // Övriga meddelanden (status, resultat, etc)
         else {
             statusLabel.setText(message);
@@ -273,6 +286,35 @@ public class QuizClientGUI extends JFrame {
         categoryPanel.repaint();
 
         ((CardLayout) mainPanel.getLayout()).show(mainPanel, "category");
+    }
+
+    private void handleAnswerSelection(int selectedAnswer, int correctAnswer) {
+        // Disable all buttons to prevent multiple answers
+        enableAnswerButtons(false);
+
+        // Get the selected button and the correct button
+        JButton selectedButton = answerButtons[selectedAnswer - 1];
+        JButton correctButton = answerButtons[correctAnswer - 1];
+
+        // Change colors based on correctness
+        if (selectedAnswer == correctAnswer) {
+            selectedButton.setBackground(Color.GREEN);
+        } else {
+            selectedButton.setBackground(Color.RED);
+            correctButton.setBackground(Color.GREEN);
+        }
+
+        // Create a timer to reset the colors after 1 second
+        Timer timer = new Timer(1000, e -> {
+            // Reset colors
+            for (JButton button : answerButtons) {
+                button.setBackground(Color.WHITE);
+            }
+            // Re-enable buttons
+            enableAnswerButtons(true);
+        });
+        timer.setRepeats(false);
+        timer.start();
     }
 
     public static void main(String[] args) {

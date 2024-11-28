@@ -4,12 +4,15 @@ import java.util.*;
 
 public class QuestionManager {
 
+    // Lista med alla tillgängliga frågor
     private List<Question> allQuestions;
 
+    // Konstruktor som läser in frågor från angiven fil
     public QuestionManager(String propertiesFileName) throws IOException {
         allQuestions = new ArrayList<>();
         Properties properties = new Properties();
 
+        // Försök läsa in properties-filen
         try (InputStream input = getClass().getClassLoader().getResourceAsStream("questions.properties")) {
             if (input == null) {
                 throw new FileNotFoundException("Kunde inte hitta filen: " + propertiesFileName);
@@ -17,7 +20,7 @@ public class QuestionManager {
             properties.load(new InputStreamReader(input, StandardCharsets.UTF_8));
         }
 
-        // Skapa alla frågor och lagra dem i allQuestions
+        // Skapa frågor från properties och lägg till i listan
         int index = 1;
         while (properties.containsKey("question" + index)) {
             String questionText = properties.getProperty("question" + index);
@@ -30,15 +33,14 @@ public class QuestionManager {
 
             index++;
         }
-
     }
 
-    // Returnerar alla frågor
+    // Returnerar en kopia av alla frågor
     public List<Question> getAllQuestions() {
-        return new ArrayList<>(allQuestions); // Returnera en kopia för att undvika oavsiktliga ändringar
+        return new ArrayList<>(allQuestions);
     }
 
-    // Returnerar frågor för en specifik kategori
+    // Filtrerar och returnerar frågor för en specifik kategori
     public List<Question> getQuestionsByCategory(String categoryFilter) {
         List<Question> filteredQuestions = new ArrayList<>();
         for (Question question : allQuestions) {
@@ -49,6 +51,7 @@ public class QuestionManager {
         return filteredQuestions;
     }
 
+    // Hämtar alla unika kategorier som finns bland frågorna
     public List<String> getAllCategories() {
         Set<String> categories = new HashSet<>();
         for (Question question : allQuestions) {
