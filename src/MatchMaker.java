@@ -12,8 +12,7 @@ public class MatchMaker {
      * Lägger till en ny spelare i kön och försöker para ihop med annan väntande
      * spelare.
      * Om det finns två spelare, skapas en match och spelet startas.
-     * 
-     * @param player Den nya spelaren som ska läggas till
+     *
      */
     public static synchronized void addPlayer(ClientHandler player) {
         waitingPlayers.add(player);
