@@ -1,10 +1,12 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.Socket;
 import java.net.InetAddress;
+import java.util.ArrayList;
 
 /**
  * Huvudklass för klientens grafiska gränssnitt i quizspelet.
@@ -25,6 +27,7 @@ public class QuizClientGUI extends JFrame {
     private JPanel welcomePanel; // Panel för välkomstvy
     private JPanel categoryPanel; // Panel för kategorival
     private JPanel resultPanel; // Panel för resultatvy
+    private JPanel roundsOverviewPanel; // Panel för rondöversikt
     private JTextArea messageArea; // Textområde för meddelanden
     private JButton[] answerButtons; // Knappar för svarsalternativ
     private JLabel questionLabel; // Etikett för frågor
@@ -41,18 +44,34 @@ public class QuizClientGUI extends JFrame {
     // Variabel för att hålla reda på vilket svar som valts
     private int selectedAnswerIndex = -1; // 0-baserad index
 
-    // Huvudkonstruktor som sätter upp fönstret och startar spelet
+    // Variabel för att lagra spelarens eget namn
+    private String playerName = "";
+
+    // Lista för att hålla reda på alla ronder
+    private ArrayList<Round> roundsList;
+
+    // Modell och tabell för rondöversikt
+    private DefaultTableModel roundsTableModel;
+    private JTable roundsTable;
+
+    /**
+     * Huvudkonstruktor som sätter upp fönstret och startar spelet
+     */
     public QuizClientGUI() {
         setTitle("Quiz Game");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 600);
         setResizable(false);
 
+        roundsList = new ArrayList<>();
+
         initializeComponents();
         connectToServer();
     }
 
-    // Skapar alla paneler och lägger till dem i huvudfönstret
+    /**
+     * Skapar alla paneler och lägger till dem i huvudfönstret
+     */
     private void initializeComponents() {
         mainPanel = new JPanel(new CardLayout());
 
@@ -60,18 +79,22 @@ public class QuizClientGUI extends JFrame {
         initializeWelcomePanel();
         initializeCategoryPanel();
         initializeGamePanel();
-        initializeResultPanel(); // Lägg till denna metod
+        initializeResultPanel();
+        initializeRoundsOverviewPanel();
 
         // Lägg till panelerna i huvudpanelen med namn för att kunna växla mellan dem
         mainPanel.add(welcomePanel, "welcome");
         mainPanel.add(categoryPanel, "category");
         mainPanel.add(gamePanel, "game");
-        mainPanel.add(resultPanel, "result"); // Lägg till resultPanel till mainPanel
+        mainPanel.add(resultPanel, "result");
+        mainPanel.add(roundsOverviewPanel, "roundsOverview");
 
         add(mainPanel);
     }
 
-    // Skapar välkomstskärmen där spelaren anger sitt namn
+    /**
+     * Skapar välkomstskärmen där spelaren anger sitt namn
+     */
     private void initializeWelcomePanel() {
         welcomePanel = new JPanel();
         welcomePanel.setLayout(new BoxLayout(welcomePanel, BoxLayout.Y_AXIS));
@@ -100,8 +123,9 @@ public class QuizClientGUI extends JFrame {
         startButton.setFocusPainted(false);
         startButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         startButton.addActionListener(e -> {
-            String playerName = nameField.getText().trim();
-            if (!playerName.isEmpty()) {
+            String enteredName = nameField.getText().trim();
+            if (!enteredName.isEmpty()) {
+                playerName = enteredName; // Lagra spelarens namn
                 out.println(playerName);
                 switchToCategoryPanel(); // Växla till kategoriskärmen efter att namnet skickats
             } else {
@@ -121,7 +145,9 @@ public class QuizClientGUI extends JFrame {
         welcomePanel.add(Box.createVerticalGlue());
     }
 
-    // Skapar kategoriskärmen där spelaren väljer frågekategori
+    /**
+     * Skapar kategoriskärmen där spelaren väljer frågekategori
+     */
     private void initializeCategoryPanel() {
         categoryPanel = new JPanel(new BorderLayout());
         categoryPanel.setBackground(bgColor);
@@ -153,7 +179,9 @@ public class QuizClientGUI extends JFrame {
         categoryPanel.add(buttonPanel, BorderLayout.CENTER);
     }
 
-    // Skapar spelskärmen där frågorna visas och besvaras
+    /**
+     * Skapar spelskärmen där frågorna visas och besvaras
+     */
     private void initializeGamePanel() {
         gamePanel = new JPanel(new BorderLayout(10, 10));
         gamePanel.setBackground(bgColor);
@@ -196,7 +224,9 @@ public class QuizClientGUI extends JFrame {
         gamePanel.add(buttonsPanel, BorderLayout.SOUTH);
     }
 
-    // Skapar resultatpanelen där slutresultaten visas
+    /**
+     * Skapar resultatpanelen där slutresultaten visas
+     */
     private void initializeResultPanel() {
         resultPanel = new JPanel();
         resultPanel.setLayout(new BoxLayout(resultPanel, BoxLayout.Y_AXIS));
@@ -236,7 +266,40 @@ public class QuizClientGUI extends JFrame {
         mainPanel.add(resultPanel, "result");
     }
 
-    // Ansluter till spelservern och sätter upp strömmar för kommunikation
+    /**
+     * Skapar översiktspanelen där rondöversikten visas
+     */
+    private void initializeRoundsOverviewPanel() {
+        roundsOverviewPanel = new JPanel();
+        roundsOverviewPanel.setLayout(new BorderLayout());
+        roundsOverviewPanel.setBackground(bgColor);
+
+        JLabel overviewTitle = new JLabel("Rondöversikt");
+        overviewTitle.setFont(titleFont);
+        overviewTitle.setForeground(textColor);
+        overviewTitle.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // Definiera kolumner för tabellen
+        String[] columnNames = {"Rond", "Ditt Namn", "Poäng", "Motståndarens Namn", "Poäng"};
+        roundsTableModel = new DefaultTableModel(columnNames, 0);
+        roundsTable = new JTable(roundsTableModel);
+        roundsTable.setEnabled(false); // Gör tabellen icke-redigerbar
+        roundsTable.setBackground(Color.WHITE);
+        roundsTable.setForeground(Color.BLACK);
+        roundsTable.setFont(inputFieldFont);
+        roundsTable.getTableHeader().setFont(titleFontSmaller);
+
+        JScrollPane scrollPane = new JScrollPane(roundsTable);
+
+        roundsOverviewPanel.add(overviewTitle, BorderLayout.NORTH);
+        roundsOverviewPanel.add(scrollPane, BorderLayout.CENTER);
+
+        mainPanel.add(roundsOverviewPanel, "roundsOverview");
+    }
+
+    /**
+     * Ansluter till spelservern och sätter upp strömmar för kommunikation
+     */
     private void connectToServer() {
         try {
             socket = new Socket(InetAddress.getLocalHost(), SERVER_PORT);
@@ -254,12 +317,16 @@ public class QuizClientGUI extends JFrame {
         }
     }
 
-    // Växlar till kategoriskärmen
+    /**
+     * Växlar till kategoriskärmen
+     */
     private void switchToCategoryPanel() {
         ((CardLayout) mainPanel.getLayout()).show(mainPanel, "category");
     }
 
-    // Hanterar alla inkommande meddelanden från servern
+    /**
+     * Hanterar alla inkommande meddelanden från servern
+     */
     private void handleServerMessages() {
         try {
             String message;
@@ -278,7 +345,9 @@ public class QuizClientGUI extends JFrame {
         }
     }
 
-    // Tolkar och hanterar olika typer av meddelanden från servern
+    /**
+     * Tolkar och hanterar olika typer av meddelanden från servern
+     */
     private void processServerMessage(String message) {
         // Om meddelandet indikerar att det är dags att välja kategori
         if (message.startsWith("Runda") && message.contains("Välj kategori:")) {
@@ -296,7 +365,7 @@ public class QuizClientGUI extends JFrame {
 
             questionLabel.setText("<html><center>" + message.substring(7) + "</center></html>");
             enableAnswerButtons(true);
-            statusLabel.setText("Please select an answer.");
+            statusLabel.setText("Välj ett svar.");
         }
         // Om meddelandet är ett svarsalternativ
         else if (message.matches("\\d\\..*")) {
@@ -307,17 +376,21 @@ public class QuizClientGUI extends JFrame {
         }
         // Om meddelandet är feedback på svaret
         else if (message.startsWith("Rätt!")) {
-            statusLabel.setText("Correct Answer!");
+            statusLabel.setText("Rätt Svar!");
             if (selectedAnswerIndex >= 0 && selectedAnswerIndex < answerButtons.length) {
                 fadeButtonColor(answerButtons[selectedAnswerIndex], Color.GREEN);
             }
             resetSelectedAnswer();
         } else if (message.startsWith("Fel!")) {
-            statusLabel.setText("Incorrect Answer!");
+            statusLabel.setText("Fel Svar!");
             if (selectedAnswerIndex >= 0 && selectedAnswerIndex < answerButtons.length) {
                 fadeButtonColor(answerButtons[selectedAnswerIndex], Color.RED);
             }
             resetSelectedAnswer();
+        }
+        // Om meddelandet är rundresultat
+        else if (message.startsWith("RoundResult:")) {
+            handleRoundResult(message.substring("RoundResult:".length()).trim());
         }
         // Om meddelandet är resultat eller andra meddelanden
         else {
@@ -331,14 +404,71 @@ public class QuizClientGUI extends JFrame {
         }
     }
 
-    // Aktiverar eller inaktiverar alla svarsknappar
+    /**
+     * Metod för att hantera rundresultat
+     * Förväntat format: Rondnummer;Spelare1Namn;Spelare1Poäng;Spelare2Namn;Spelare2Poäng
+     */
+    private void handleRoundResult(String roundData) {
+        String[] parts = roundData.split(";");
+        if (parts.length == 5) {
+            try {
+                int roundNumber = Integer.parseInt(parts[0].trim());
+                String player1Name = parts[1].trim();
+                int player1Score = Integer.parseInt(parts[2].trim());
+                String player2Name = parts[3].trim();
+                int player2Score = Integer.parseInt(parts[4].trim());
+
+                // Bestäm vilken spelare som är klienten
+                boolean isPlayer1 = playerName.equalsIgnoreCase(player1Name);
+                boolean isPlayer2 = playerName.equalsIgnoreCase(player2Name);
+
+                if (!isPlayer1 && !isPlayer2) {
+                    // Klienten är inte med i denna runda
+                    System.err.println("Client name does not match any player in the round.");
+                    return;
+                }
+
+                String opponentName = isPlayer1 ? player2Name : player1Name;
+                int playerScore = isPlayer1 ? player1Score : player2Score;
+                int opponentScore = isPlayer1 ? player2Score : player1Score;
+
+                Round round = new Round(roundNumber, playerName, playerScore, opponentName, opponentScore);
+                roundsList.add(round);
+                updateRoundsTable(round);
+
+                // Visa översiktspanelen
+                ((CardLayout) mainPanel.getLayout()).show(mainPanel, "roundsOverview");
+            } catch (NumberFormatException e) {
+                System.err.println("Felaktigt format på runddata: " + roundData);
+            }
+        }
+    }
+
+    /**
+     * Metod för att uppdatera tabellen med rundresultat
+     */
+    private void updateRoundsTable(Round round) {
+        roundsTableModel.addRow(new Object[]{
+                round.getRoundNumber(),
+                round.getPlayer1Name(),
+                round.getPlayer1Score(),
+                round.getPlayer2Name(),
+                round.getPlayer2Score()
+        });
+    }
+
+    /**
+     * Aktiverar eller inaktiverar alla svarsknappar
+     */
     private void enableAnswerButtons(boolean enable) {
         for (JButton button : answerButtons) {
             button.setEnabled(enable);
         }
     }
 
-    // Återställer svarsknapparnas färger och text
+    /**
+     * Återställer svarsknapparnas färger och text
+     */
     private void resetAnswerButtons() {
         for (JButton button : answerButtons) {
             button.setBackground(Color.WHITE);
@@ -346,12 +476,16 @@ public class QuizClientGUI extends JFrame {
         }
     }
 
-    // Återställer den valda svaret
+    /**
+     * Återställer den valda svaret
+     */
     private void resetSelectedAnswer() {
         selectedAnswerIndex = -1;
     }
 
-    // Uppdaterar kategoriskärmen med nya kategorier och visar den
+    /**
+     * Uppdaterar kategoriskärmen med nya kategorier och visar den
+     */
     private void showCategorySelection(String[] categories) {
         // Rensa gamla komponenter
         categoryPanel.removeAll();
@@ -390,7 +524,9 @@ public class QuizClientGUI extends JFrame {
         ((CardLayout) mainPanel.getLayout()).show(mainPanel, "category");
     }
 
-    // Visar resultatpanelen med slutresultaten
+    /**
+     * Visar resultatpanelen med slutresultaten
+     */
     private void showResult(String resultText) {
         // Uppdatera resultatområdet
         resultArea.setText(resultText);
@@ -399,12 +535,13 @@ public class QuizClientGUI extends JFrame {
         ((CardLayout) mainPanel.getLayout()).show(mainPanel, "result");
     }
 
-    // Metod för att animera färgändring på knappar med fade-effekt och
-    // återställning
+    /**
+     * Metod för att animera färgändring på knappar med fade-effekt och återställning
+     */
     private void fadeButtonColor(JButton button, Color targetColor) {
         Color initialColor = button.getBackground();
-        int steps = 5; // Minska antalet steg för snabbare fade
-        int delay = 20; // Minska fördröjningen mellan steg
+        int steps = 5; // Antal steg för fade
+        int delay = 20; // Fördröjning mellan steg i millisekunder
 
         // Beräkna stegvisa färgändringar
         float[] initialRGB = initialColor.getRGBComponents(null);
@@ -429,24 +566,58 @@ public class QuizClientGUI extends JFrame {
                     button.setBackground(targetColor);
                     timer.stop();
 
-                    // Starta en ny timer för att återställa färgen efter en kort stund
-                    Timer resetTimer = new Timer(200, new ActionListener() { // 0.2 sekund delay
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            button.setBackground(Color.WHITE);
-                        }
-                    });
-                    resetTimer.setRepeats(false);
-                    resetTimer.start();
+                    // Starta en ny timer för att fasa tillbaka färgen till vit
+                    fadeBackToWhite(button);
                 }
             }
         });
         timer.start();
     }
 
+    /**
+     * Metod för att animera tillbaka färgen till vit
+     */
+    private void fadeBackToWhite(JButton button) {
+        Color currentColor = button.getBackground();
+        int steps = 5; // Antal steg för att fasa tillbaka
+        int delay = 20; // Fördröjning mellan steg i millisekunder
+
+        // Beräkna stegvisa färgändringar tillbaka till vit
+        float[] currentRGB = currentColor.getRGBComponents(null);
+        float[] targetRGB = Color.WHITE.getRGBComponents(null);
+        float deltaR = (targetRGB[0] - currentRGB[0]) / steps;
+        float deltaG = (targetRGB[1] - currentRGB[1]) / steps;
+        float deltaB = (targetRGB[2] - currentRGB[2]) / steps;
+
+        Timer resetTimer = new Timer(delay, null);
+        resetTimer.addActionListener(new ActionListener() {
+            int currentStep = 0;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (currentStep < steps) {
+                    float newR = currentRGB[0] + deltaR * currentStep;
+                    float newG = currentRGB[1] + deltaG * currentStep;
+                    float newB = currentRGB[2] + deltaB * currentStep;
+                    button.setBackground(new Color(newR, newG, newB));
+                    currentStep++;
+                } else {
+                    button.setBackground(Color.WHITE);
+                    resetTimer.stop();
+                }
+            }
+        });
+        resetTimer.start();
+    }
+
+    /**
+     * Huvudmetod för att starta applikationen
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             new QuizClientGUI().setVisible(true);
         });
     }
 }
+
+
