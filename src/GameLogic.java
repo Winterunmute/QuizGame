@@ -4,16 +4,20 @@ import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Hanterar spellogiken för en spelsession mellan två spelare.
+ * Ansvarar för frågehantering, poängräkning och spelflöde.
+ */
 public class GameLogic {
-    private ClientHandler player;
-    private ClientHandler opponent;
-    private volatile String chosenCategory;
-    private List<Question> gameQuestions;
-    private int score;
-    private volatile boolean firstPlayerDone = false;
-    private volatile boolean secondPlayerDone = false;
-    private int totalScore = 0;
-    private volatile boolean categoryChosen = false;
+    private ClientHandler player; // Aktuell spelare
+    private ClientHandler opponent; // Motståndarspelare
+    private List<Question> gameQuestions; // Lista med spelets frågor
+    private String chosenCategory; // Vald frågekategori
+    private int score; // Spelarens poäng
+    private int totalScore; // Total poäng för alla rundor
+    private boolean categoryChosen; // Flag för om kategori har valts
+    private boolean firstPlayerDone; // Flag för om första spelaren är klar
+    private boolean secondPlayerDone; // Flag för om andra spelaren är klar
 
     public GameLogic(ClientHandler player, ClientHandler opponent) {
         this.player = player;

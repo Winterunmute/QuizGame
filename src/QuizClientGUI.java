@@ -6,21 +6,30 @@ import java.io.*;
 import java.net.Socket;
 import java.net.InetAddress;
 
+/**
+ * Huvudklass för klientens grafiska gränssnitt i quizspelet.
+ * Hanterar all användarinteraktion och kommunikation med servern.
+ */
 public class QuizClientGUI extends JFrame {
+    // Konstanter för nätverkskommunikation
     private static final int SERVER_PORT = 45555;
+
+    // Nätverkskomponenter
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
-    private JPanel mainPanel;
-    private JPanel gamePanel;
-    private JPanel welcomePanel;
-    private JPanel categoryPanel;
-    private JPanel resultPanel; // Deklarera resultPanel
-    private JTextArea messageArea;
-    private JButton[] answerButtons;
-    private JLabel questionLabel;
-    private JLabel statusLabel;
-    private JTextArea resultArea; // Deklarera resultArea
+
+    // GUI-komponenter för olika vyer
+    private JPanel mainPanel; // Huvudpanel som innehåller alla andra paneler
+    private JPanel gamePanel; // Panel för spelvy
+    private JPanel welcomePanel; // Panel för välkomstvy
+    private JPanel categoryPanel; // Panel för kategorival
+    private JPanel resultPanel; // Panel för resultatvy
+    private JTextArea messageArea; // Textområde för meddelanden
+    private JButton[] answerButtons; // Knappar för svarsalternativ
+    private JLabel questionLabel; // Etikett för frågor
+    private JLabel statusLabel; // Etikett för statusmeddelanden
+    private JTextArea resultArea; // Textområde för resultat
 
     // Styling variables
     private Color bgColor = Color.decode("#33c1ff");
@@ -73,7 +82,7 @@ public class QuizClientGUI extends JFrame {
         titleLabel.setForeground(textColor);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel nameLabel = new JLabel("Enter your name:");
+        JLabel nameLabel = new JLabel("Ange ditt namn:");
         nameLabel.setFont(titleFontSmaller);
         nameLabel.setForeground(textColor);
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -83,7 +92,7 @@ public class QuizClientGUI extends JFrame {
         nameField.setFont(inputFieldFont);
         nameField.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton startButton = new JButton("Join Game");
+        JButton startButton = new JButton("Gå med i spel");
         startButton.setFont(titleFontSmaller);
         startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         startButton.setBackground(new Color(52, 152, 219));
@@ -96,7 +105,8 @@ public class QuizClientGUI extends JFrame {
                 out.println(playerName);
                 switchToCategoryPanel(); // Växla till kategoriskärmen efter att namnet skickats
             } else {
-                JOptionPane.showMessageDialog(this, "Please enter your name.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Ange ditt namn.", "Input Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -116,7 +126,7 @@ public class QuizClientGUI extends JFrame {
         categoryPanel = new JPanel(new BorderLayout());
         categoryPanel.setBackground(bgColor);
 
-        JLabel categoryLabel = new JLabel("Choose Category");
+        JLabel categoryLabel = new JLabel("Välj Kategori");
         categoryLabel.setFont(titleFont);
         categoryLabel.setForeground(textColor);
         categoryLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -148,7 +158,7 @@ public class QuizClientGUI extends JFrame {
         gamePanel = new JPanel(new BorderLayout(10, 10));
         gamePanel.setBackground(bgColor);
 
-        statusLabel = new JLabel("Waiting for game to start...");
+        statusLabel = new JLabel("Väntar på spel att starta...");
         statusLabel.setFont(titleFontSmaller);
         statusLabel.setForeground(textColor);
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -176,7 +186,7 @@ public class QuizClientGUI extends JFrame {
                 out.println(String.valueOf(answer));
                 selectedAnswerIndex = finalI; // Spara vilket svar som valts
                 enableAnswerButtons(false); // Inaktivera knapparna för att förhindra flera val
-                statusLabel.setText("Answer sent. Waiting for feedback...");
+                statusLabel.setText("Svar skickat. Väntar på feedback...");
             });
             buttonsPanel.add(answerButtons[i]);
         }
@@ -302,8 +312,7 @@ public class QuizClientGUI extends JFrame {
                 fadeButtonColor(answerButtons[selectedAnswerIndex], Color.GREEN);
             }
             resetSelectedAnswer();
-        }
-        else if (message.startsWith("Fel!")) {
+        } else if (message.startsWith("Fel!")) {
             statusLabel.setText("Incorrect Answer!");
             if (selectedAnswerIndex >= 0 && selectedAnswerIndex < answerButtons.length) {
                 fadeButtonColor(answerButtons[selectedAnswerIndex], Color.RED);
@@ -315,8 +324,7 @@ public class QuizClientGUI extends JFrame {
             statusLabel.setText(message);
             if (message.startsWith("Resultat:")) {
                 showResult(message.substring(9).trim());
-            }
-            else if (message.contains("motståndare har anslutit") ||
+            } else if (message.contains("motståndare har anslutit") ||
                     message.contains("Du spelar mot:")) {
                 ((CardLayout) mainPanel.getLayout()).show(mainPanel, "game");
             }
@@ -391,7 +399,8 @@ public class QuizClientGUI extends JFrame {
         ((CardLayout) mainPanel.getLayout()).show(mainPanel, "result");
     }
 
-    // Metod för att animera färgändring på knappar med fade-effekt och återställning
+    // Metod för att animera färgändring på knappar med fade-effekt och
+    // återställning
     private void fadeButtonColor(JButton button, Color targetColor) {
         Color initialColor = button.getBackground();
         int steps = 5; // Minska antalet steg för snabbare fade
